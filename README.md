@@ -1,0 +1,2 @@
+# RoadVision-AI
+A digital platform for the automated monitoring of road infrastructure in Shymkent.
