@@ -1,0 +1,58 @@
+.defect-marker-shell {
+  background: transparent;
+  border: 0;
+}
+
+.defect-marker {
+  align-items: center;
+  background: var(--marker-color);
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 35%);
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  transform: rotate(-45deg);
+  width: 28px;
+}
+
+.defect-marker > span {
+  background: white;
+  border-radius: 999px;
+  height: 7px;
+  width: 7px;
+}
+
+.defect-popup .leaflet-popup-content-wrapper,
+.defect-popup .leaflet-popup-tip {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+.defect-popup .leaflet-popup-content {
+  margin: 14px 16px;
+}
+
+.defect-popup .leaflet-popup-close-button {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.leaflet-container {
+  background: hsl(var(--muted));
+  font-family: inherit;
+  max-width: 100%;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 700;
+}
+
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: hsl(var(--primary) / 35%);
+}
