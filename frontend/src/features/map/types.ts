@@ -17,4 +17,6 @@ export interface MapFilterValues {
   type: DefectType | 'all';
   severity: DefectSeverity | 'all';
   status: DefectStatus | 'all';
+  query: string;
+  minConfidence: number;
 }

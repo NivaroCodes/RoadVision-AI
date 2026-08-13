@@ -13,6 +13,8 @@ interface MapFiltersProps {
   onReset: () => void;
 }
 
+const CONFIDENCE_OPTIONS = [0, 70, 80, 90] as const;
+
 interface FilterSelectProps {
   id: string;
   label: string;
@@ -71,11 +73,28 @@ export function MapFilters({
   onChange,
   onReset,
 }: MapFiltersProps) {
-  const activeFilterCount = Object.values(filters).filter((value) => value !== 'all').length;
+  const activeFilterCount = [
+    filters.type !== 'all',
+    filters.severity !== 'all',
+    filters.status !== 'all',
+    filters.query.trim() !== '',
+    filters.minConfidence > 0,
+  ].filter(Boolean).length;
 
   return (
     <div className="map-filter-panel absolute left-3 right-3 top-3 z-[500] rounded-xl border p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(760px,calc(100%-2rem))]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)_auto] lg:items-end">
+        <label className="flex min-w-0 flex-col gap-1.5" htmlFor="map-search-filter">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Search</span>
+          <input
+            id="map-search-filter"
+            type="search"
+            value={filters.query}
+            onChange={(event) => onChange({ ...filters, query: event.target.value })}
+            placeholder="ID or address"
+            className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
+          />
+        </label>
         <FilterSelect
           id="map-type-filter"
           label="Type"
@@ -83,6 +102,19 @@ export function MapFilters({
           options={TYPE_OPTIONS}
           onChange={(type) => onChange({ ...filters, type: type as DefectType | 'all' })}
         />
+        <label className="flex min-w-0 flex-col gap-1.5" htmlFor="map-confidence-filter">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Confidence</span>
+          <select
+            id="map-confidence-filter"
+            value={filters.minConfidence}
+            onChange={(event) => onChange({ ...filters, minConfidence: Number(event.target.value) })}
+            className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
+          >
+            {CONFIDENCE_OPTIONS.map((value) => (
+              <option key={value} value={value}>{value === 0 ? 'Any confidence' : `${value}% or more`}</option>
+            ))}
+          </select>
+        </label>
         <FilterSelect
           id="map-severity-filter"
           label="Severity"

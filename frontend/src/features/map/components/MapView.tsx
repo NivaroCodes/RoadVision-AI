@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -15,24 +15,60 @@ const INITIAL_FILTERS: MapFilterValues = {
   type: 'all',
   severity: 'all',
   status: 'all',
+  query: '',
+  minConfidence: 0,
 };
 
 interface MapViewProps {
   defects?: readonly DefectMarkerData[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
-export function MapView({ defects = mockDefects }: MapViewProps) {
+function RecenterControl() {
+  const map = useMap();
+
+  return (
+    <button
+      type="button"
+      className="map-recenter-button absolute bottom-7 right-3 z-[500] rounded-lg border px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur sm:right-4"
+      onClick={() => map.setView(SHYMKENT_CENTER, 12, { animate: true })}
+      aria-label="Center map on Shymkent"
+    >
+      Center Shymkent
+    </button>
+  );
+}
+
+export function MapView({ defects = mockDefects, isLoading = false, error = null }: MapViewProps) {
   const [filters, setFilters] = useState<MapFilterValues>(INITIAL_FILTERS);
 
-  const filteredDefects = useMemo(
-    () =>
-      defects.filter(
-        (defect) =>
+  const filteredDefects = useMemo(() => {
+    const query = filters.query.trim().toLocaleLowerCase();
+
+    return defects.filter(
+        (defect) => {
+          const matchesQuery =
+            query === '' ||
+            String(defect.id).includes(query) ||
+            defect.address?.toLocaleLowerCase().includes(query) === true;
+
+          return matchesQuery &&
           (filters.type === 'all' || defect.type === filters.type) &&
           (filters.severity === 'all' || defect.severity === filters.severity) &&
-          (filters.status === 'all' || defect.status === filters.status),
-      ),
-    [defects, filters],
+          (filters.status === 'all' || defect.status === filters.status) &&
+          defect.confidence * 100 >= filters.minConfidence;
+        },
+      );
+  }, [defects, filters]);
+
+  const severityCounts = useMemo(
+    () => ({
+      low: filteredDefects.filter((defect) => defect.severity === 'low').length,
+      medium: filteredDefects.filter((defect) => defect.severity === 'medium').length,
+      high: filteredDefects.filter((defect) => defect.severity === 'high').length,
+    }),
+    [filteredDefects],
   );
 
   return (
@@ -48,13 +84,23 @@ export function MapView({ defects = mockDefects }: MapViewProps) {
       <div className="map-legend absolute bottom-7 left-3 z-[500] rounded-lg border px-3 py-2 shadow-lg backdrop-blur sm:left-4" aria-label="Defect severity legend">
         <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Severity</p>
         <ul className="flex gap-3 text-xs font-medium text-foreground">
-          <li><span className="legend-dot bg-green-500" />Low</li>
-          <li><span className="legend-dot bg-orange-500" />Medium</li>
-          <li><span className="legend-dot bg-red-500" />High</li>
+          <li><span className="legend-dot bg-green-500" />Low {severityCounts.low}</li>
+          <li><span className="legend-dot bg-orange-500" />Medium {severityCounts.medium}</li>
+          <li><span className="legend-dot bg-red-500" />High {severityCounts.high}</li>
         </ul>
       </div>
 
-      {filteredDefects.length === 0 ? (
+      {isLoading ? (
+        <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
+          <span className="map-loading-spinner mx-auto block" aria-hidden="true" />
+          <p className="mt-3 font-semibold text-foreground">Loading defects…</p>
+        </div>
+      ) : error ? (
+        <div className="map-empty-state absolute left-1/2 top-1/2 z-[500] w-[min(360px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="alert">
+          <p className="font-semibold text-red-500">Unable to load defects</p>
+          <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+        </div>
+      ) : filteredDefects.length === 0 ? (
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
           <p className="font-semibold text-foreground">No defects found</p>
           <p className="mt-1 text-sm text-muted-foreground">Change or reset the filters to see map markers.</p>
@@ -66,16 +112,19 @@ export function MapView({ defects = mockDefects }: MapViewProps) {
         zoom={12}
         className="h-full min-h-[520px] w-full"
         scrollWheelZoom
+        zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <ZoomControl position="bottomright" />
+        <RecenterControl />
 
         <MarkerClusterGroup chunkedLoading showCoverageOnHover={false}>
-          {filteredDefects.map((defect) => (
+          {!isLoading && !error ? filteredDefects.map((defect) => (
             <DefectMarker key={defect.id} defect={defect} />
-          ))}
+          )) : null}
         </MarkerClusterGroup>
       </MapContainer>
     </section>
