@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import L from 'leaflet';
 import { Marker } from 'react-leaflet';
 import { DefectPopup } from './DefectPopup';
@@ -9,23 +8,29 @@ interface DefectMarkerProps {
   defect: DefectMarkerData;
 }
 
-export function DefectMarker({ defect }: DefectMarkerProps) {
-  const icon = useMemo(() => {
-    const color = getMarkerColor(defect.severity);
+const MARKER_ICONS = {
+  low: createMarkerIcon('low'),
+  medium: createMarkerIcon('medium'),
+  high: createMarkerIcon('high'),
+} as const;
 
-    return L.divIcon({
+function createMarkerIcon(severity: DefectMarkerData['severity']): L.DivIcon {
+  const color = getMarkerColor(severity);
+
+  return L.divIcon({
       className: 'defect-marker-shell',
-      html: `<span class="defect-marker" style="--marker-color: ${color}" aria-hidden="true"><span></span></span>`,
+      html: `<span class="defect-marker" style="--marker-color:${color}" aria-hidden="true"><span></span></span>`,
       iconSize: [32, 38],
       iconAnchor: [16, 38],
       popupAnchor: [0, -34],
-    });
-  }, [defect.severity]);
+  });
+}
 
+export function DefectMarker({ defect }: DefectMarkerProps) {
   return (
     <Marker
       position={[defect.latitude, defect.longitude]}
-      icon={icon}
+      icon={MARKER_ICONS[defect.severity]}
       title={`Defect #${defect.id}: ${defect.type}`}
     >
       <DefectPopup defect={defect} />

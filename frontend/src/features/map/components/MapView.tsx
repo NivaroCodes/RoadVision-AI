@@ -42,7 +42,24 @@ export function MapView({ defects = mockDefects }: MapViewProps) {
         resultCount={filteredDefects.length}
         totalCount={defects.length}
         onChange={setFilters}
+        onReset={() => setFilters(INITIAL_FILTERS)}
       />
+
+      <div className="map-legend absolute bottom-7 left-3 z-[500] rounded-lg border px-3 py-2 shadow-lg backdrop-blur sm:left-4" aria-label="Defect severity legend">
+        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Severity</p>
+        <ul className="flex gap-3 text-xs font-medium text-foreground">
+          <li><span className="legend-dot bg-green-500" />Low</li>
+          <li><span className="legend-dot bg-orange-500" />Medium</li>
+          <li><span className="legend-dot bg-red-500" />High</li>
+        </ul>
+      </div>
+
+      {filteredDefects.length === 0 ? (
+        <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
+          <p className="font-semibold text-foreground">No defects found</p>
+          <p className="mt-1 text-sm text-muted-foreground">Change or reset the filters to see map markers.</p>
+        </div>
+      ) : null}
 
       <MapContainer
         center={SHYMKENT_CENTER}

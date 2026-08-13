@@ -67,6 +67,54 @@
   color: var(--card-foreground);
 }
 
+.map-reset-button {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.map-reset-button:not(:disabled):hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.map-legend,
+.map-empty-state {
+  background: color-mix(in oklab, var(--card) 94%, transparent);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+
+.map-legend ul,
+.map-legend li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-legend li {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.legend-dot {
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 999px;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+
+@media (max-width: 639px) {
+  .map-legend {
+    bottom: 24px;
+  }
+
+  .map-legend p {
+    display: none;
+  }
+}
+
 .marker-cluster-small div,
 .marker-cluster-medium div,
 .marker-cluster-large div {

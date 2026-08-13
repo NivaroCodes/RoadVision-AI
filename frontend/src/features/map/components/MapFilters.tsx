@@ -10,6 +10,7 @@ interface MapFiltersProps {
   resultCount: number;
   totalCount: number;
   onChange: (filters: MapFilterValues) => void;
+  onReset: () => void;
 }
 
 interface FilterSelectProps {
@@ -68,9 +69,12 @@ export function MapFilters({
   resultCount,
   totalCount,
   onChange,
+  onReset,
 }: MapFiltersProps) {
+  const activeFilterCount = Object.values(filters).filter((value) => value !== 'all').length;
+
   return (
-    <div className="map-filter-panel absolute left-3 right-3 top-3 z-[500] rounded-xl border p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(680px,calc(100%-2rem))]">
+    <div className="map-filter-panel absolute left-3 right-3 top-3 z-[500] rounded-xl border p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(760px,calc(100%-2rem))]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <FilterSelect
           id="map-type-filter"
@@ -97,9 +101,20 @@ export function MapFilters({
             onChange({ ...filters, status: status as DefectStatus | 'all' })
           }
         />
-        <p className="shrink-0 pb-2 text-xs font-medium text-muted-foreground" aria-live="polite">
-          {resultCount} of {totalCount}
-        </p>
+        <div className="flex shrink-0 items-center justify-between gap-2 sm:pb-1">
+          <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
+            {resultCount} of {totalCount}
+          </p>
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={activeFilterCount === 0}
+            className="map-reset-button h-8 rounded-md px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={`Reset ${activeFilterCount} active filters`}
+          >
+            Reset{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </button>
+        </div>
       </div>
     </div>
   );

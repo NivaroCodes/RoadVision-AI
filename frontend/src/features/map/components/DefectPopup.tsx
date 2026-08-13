@@ -18,6 +18,8 @@ interface DefectPopupProps {
 }
 
 export function DefectPopup({ defect }: DefectPopupProps) {
+  const confidence = Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
+
   return (
     <Popup className="defect-popup" minWidth={220}>
       <div className="space-y-3">
@@ -37,7 +39,7 @@ export function DefectPopup({ defect }: DefectPopupProps) {
           </dd>
           <dt className="text-muted-foreground">Confidence</dt>
           <dd className="text-right font-medium text-foreground">
-            {Math.round(defect.confidence * 100)}%
+            {confidence}%
           </dd>
         </dl>
 
