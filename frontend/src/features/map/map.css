@@ -25,8 +25,8 @@
 
 .defect-popup .leaflet-popup-content-wrapper,
 .defect-popup .leaflet-popup-tip {
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
+  background: var(--card);
+  color: var(--card-foreground);
 }
 
 .defect-popup .leaflet-popup-content {
@@ -34,25 +34,49 @@
 }
 
 .defect-popup .leaflet-popup-close-button {
-  color: hsl(var(--muted-foreground)) !important;
+  color: var(--muted-foreground) !important;
+}
+
+.defect-popup h3,
+.defect-popup dd {
+  color: var(--foreground);
+}
+
+.defect-popup dt,
+.defect-popup p {
+  color: var(--muted-foreground);
+}
+
+.defect-popup p {
+  margin: 0;
+}
+
+.defect-popup dl {
+  margin: 0;
 }
 
 .leaflet-container {
-  background: hsl(var(--muted));
+  background: var(--muted);
   font-family: inherit;
   max-width: 100%;
+}
+
+.map-filter-panel {
+  background: color-mix(in oklab, var(--card) 95%, transparent);
+  border-color: var(--border);
+  color: var(--card-foreground);
 }
 
 .marker-cluster-small div,
 .marker-cluster-medium div,
 .marker-cluster-large div {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-weight: 700;
 }
 
 .marker-cluster-small,
 .marker-cluster-medium,
 .marker-cluster-large {
-  background: hsl(var(--primary) / 35%);
+  background: color-mix(in oklab, var(--primary) 35%, transparent);
 }

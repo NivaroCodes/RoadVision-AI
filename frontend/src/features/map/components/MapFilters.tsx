@@ -70,7 +70,7 @@ export function MapFilters({
   onChange,
 }: MapFiltersProps) {
   return (
-    <div className="absolute left-3 right-3 top-3 z-[500] rounded-xl border border-border/80 bg-card/95 p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(680px,calc(100%-2rem))]">
+    <div className="map-filter-panel absolute left-3 right-3 top-3 z-[500] rounded-xl border p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(680px,calc(100%-2rem))]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <FilterSelect
           id="map-type-filter"
