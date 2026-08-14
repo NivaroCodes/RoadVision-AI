@@ -1,0 +1,35 @@
+.defects-page {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.defects-page .text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+.defects-surface {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+
+.defects-primary-button {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.defects-primary-button:hover {
+  background: color-mix(in oklab, var(--primary) 82%, transparent) !important;
+}
+
+.defects-dialog,
+.defects-select-content {
+  background: var(--popover) !important;
+  border-color: var(--border) !important;
+  color: var(--popover-foreground) !important;
+}
+
+.defects-dialog-footer {
+  background: color-mix(in oklab, var(--muted) 72%, var(--popover)) !important;
+  border-color: var(--border) !important;
+}
