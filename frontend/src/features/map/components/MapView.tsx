@@ -81,19 +81,19 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
         onReset={() => setFilters(INITIAL_FILTERS)}
       />
 
-      <div className="map-legend absolute bottom-7 left-3 z-[500] rounded-lg border px-3 py-2 shadow-lg backdrop-blur sm:left-4" aria-label="Defect severity legend">
-        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Severity</p>
+      <div className="map-legend absolute bottom-7 left-3 z-[500] rounded-lg border px-3 py-2 shadow-lg backdrop-blur sm:left-4" aria-label="Легенда критичности">
+        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Критичность</p>
         <ul className="flex gap-3 text-xs font-medium text-foreground">
-          <li><span className="legend-dot bg-green-500" />Low {severityCounts.low}</li>
-          <li><span className="legend-dot bg-orange-500" />Medium {severityCounts.medium}</li>
-          <li><span className="legend-dot bg-red-500" />High {severityCounts.high}</li>
+          <li><span className="legend-dot bg-green-500" />Низкая {severityCounts.low}</li>
+          <li><span className="legend-dot bg-orange-500" />Средняя {severityCounts.medium}</li>
+          <li><span className="legend-dot bg-red-500" />Высокая {severityCounts.high}</li>
         </ul>
       </div>
 
       {isLoading ? (
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
           <span className="map-loading-spinner mx-auto block" aria-hidden="true" />
-          <p className="mt-3 font-semibold text-foreground">Loading defects…</p>
+          <p className="mt-3 font-semibold text-foreground">Загрузка дефектов…</p>
         </div>
       ) : error ? (
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-destructive/50 bg-destructive/10 p-5 text-center shadow-xl backdrop-blur" role="alert">
