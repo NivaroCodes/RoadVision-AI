@@ -1,0 +1,159 @@
+.defect-marker-shell {
+  background: transparent;
+  border: 0;
+}
+
+.defect-marker {
+  align-items: center;
+  background: var(--marker-color);
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 35%);
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  transform: rotate(-45deg);
+  width: 28px;
+}
+
+.defect-marker > span {
+  background: white;
+  border-radius: 999px;
+  height: 7px;
+  width: 7px;
+}
+
+.defect-popup .leaflet-popup-content-wrapper,
+.defect-popup .leaflet-popup-tip {
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+.defect-popup .leaflet-popup-content {
+  margin: 14px 16px;
+}
+
+.defect-popup .leaflet-popup-close-button {
+  color: var(--muted-foreground) !important;
+}
+
+.defect-popup h3,
+.defect-popup dd {
+  color: var(--foreground);
+}
+
+.defect-popup dt,
+.defect-popup p {
+  color: var(--muted-foreground);
+}
+
+.defect-popup p {
+  margin: 0;
+}
+
+.defect-popup dl {
+  margin: 0;
+}
+
+.leaflet-container {
+  background: var(--muted);
+  font-family: inherit;
+  max-width: 100%;
+}
+
+.map-filter-panel {
+  background: color-mix(in oklab, var(--card) 95%, transparent);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+
+.map-reset-button {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.map-reset-button:not(:disabled):hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.map-recenter-button {
+  background: color-mix(in oklab, var(--card) 94%, transparent);
+  border-color: var(--border);
+  color: var(--card-foreground);
+  right: 52px !important;
+}
+
+.map-recenter-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.map-loading-spinner {
+  animation: map-spin 0.8s linear infinite;
+  border: 3px solid var(--border);
+  border-radius: 999px;
+  border-top-color: var(--primary);
+  height: 28px;
+  width: 28px;
+}
+
+@keyframes map-spin {
+  to { transform: rotate(360deg); }
+}
+
+.map-legend,
+.map-empty-state {
+  background: color-mix(in oklab, var(--card) 94%, transparent);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+
+.map-legend ul,
+.map-legend li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-legend li {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.legend-dot {
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 999px;
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+}
+
+@media (max-width: 639px) {
+  .map-legend {
+    bottom: 24px;
+  }
+
+  .map-recenter-button {
+    bottom: 24px;
+  }
+
+  .map-legend p {
+    display: none;
+  }
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+}
+
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: color-mix(in oklab, var(--primary) 35%, transparent);
+}
