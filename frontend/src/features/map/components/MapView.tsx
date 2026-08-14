@@ -96,28 +96,28 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
           <p className="mt-3 font-semibold text-foreground">Loading defects…</p>
         </div>
       ) : error ? (
-        <div className="map-empty-state absolute left-1/2 top-1/2 z-[500] w-[min(360px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="alert">
-          <p className="font-semibold text-red-500">Unable to load defects</p>
+        <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-destructive/50 bg-destructive/10 p-5 text-center shadow-xl backdrop-blur" role="alert">
+          <p className="font-semibold text-red-500">Ошибка загрузки дефектов</p>
           <p className="mt-1 text-sm text-muted-foreground">{error}</p>
         </div>
       ) : filteredDefects.length === 0 ? (
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
-          <p className="font-semibold text-foreground">No defects found</p>
-          <p className="mt-1 text-sm text-muted-foreground">Change or reset the filters to see map markers.</p>
+          <p className="font-semibold text-foreground">Дефекты не найдены</p>
+          <p className="mt-1 text-sm text-muted-foreground">Измените или сбросьте фильтры для отображения маркеров.</p>
         </div>
       ) : null}
 
-      <MapContainer
-        center={SHYMKENT_CENTER}
-        zoom={12}
-        className="h-full min-h-[520px] w-full"
-        scrollWheelZoom
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <MapContainer
+          center={SHYMKENT_CENTER}
+          zoom={12}
+          className="h-full w-full z-0"
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
         <ZoomControl position="bottomright" />
         <RecenterControl />
 

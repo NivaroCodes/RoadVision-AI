@@ -2,15 +2,15 @@ import { Popup } from 'react-leaflet';
 import type { DefectMarker } from '../types';
 
 const LABELS = {
-  crack: 'Crack',
-  pothole: 'Pothole',
-  net: 'Net cracking',
-  detected: 'Detected',
-  in_progress: 'In progress',
-  fixed: 'Fixed',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
+  crack: 'Трещина',
+  pothole: 'Яма',
+  net: 'Сетка трещин',
+  detected: 'Обнаружен',
+  in_progress: 'В работе',
+  fixed: 'Исправлен',
+  low: 'Низкая',
+  medium: 'Средняя',
+  high: 'Высокая',
 } as const;
 
 interface DefectPopupProps {
@@ -25,26 +25,26 @@ export function DefectPopup({ defect }: DefectPopupProps) {
       <div className="space-y-3">
         <div className="border-b border-border pb-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Defect #{defect.id}
+            Дефект #{defect.id}
           </p>
           <h3 className="text-base font-semibold text-foreground">{LABELS[defect.type]}</h3>
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-          <dt className="text-muted-foreground">Status</dt>
+          <dt className="text-muted-foreground">Статус</dt>
           <dd className="text-right font-medium text-foreground">{LABELS[defect.status]}</dd>
-          <dt className="text-muted-foreground">Severity</dt>
+          <dt className="text-muted-foreground">Критичность</dt>
           <dd className="text-right font-medium capitalize text-foreground">
             {LABELS[defect.severity]}
           </dd>
-          <dt className="text-muted-foreground">Confidence</dt>
+          <dt className="text-muted-foreground">Уверенность</dt>
           <dd className="text-right font-medium text-foreground">
             {confidence}%
           </dd>
         </dl>
 
         <p className="border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">
-          {defect.address ?? 'Shymkent'}
+          {defect.address ?? 'Шымкент'}
         </p>
       </div>
     </Popup>
