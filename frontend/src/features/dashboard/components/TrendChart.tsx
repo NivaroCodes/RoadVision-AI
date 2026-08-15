@@ -3,9 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAnalyticsTrends } from '../hooks/useAnalyticsTrends';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, CalendarDays } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export function TrendChart() {
   const { data, isLoading, isError } = useAnalyticsTrends();
+  const [searchParams] = useSearchParams();
+  const fromParam = searchParams.get('from');
+  const toParam = searchParams.get('to');
+  const hasFilter = fromParam && toParam && !isNaN(Date.parse(fromParam)) && !isNaN(Date.parse(toParam));
+  const description = hasFilter 
+    ? "Количество дефектов за последние 7 дней (данные не фильтруются)"
+    : "Количество дефектов за последние 7 дней";
 
   if (isLoading) {
     return (
@@ -40,7 +48,7 @@ export function TrendChart() {
       <Card className="col-span-1 lg:col-span-4 h-full min-h-[400px] flex flex-col">
         <CardHeader>
           <CardTitle>Динамика обнаружения</CardTitle>
-          <CardDescription>Количество дефектов за последние 7 дней</CardDescription>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center text-muted-foreground border-t">
           <CalendarDays className="mb-4 h-12 w-12 opacity-20" />
@@ -61,7 +69,7 @@ export function TrendChart() {
     <Card className="col-span-1 lg:col-span-4 h-full min-h-[400px] flex flex-col">
       <CardHeader>
         <CardTitle>Динамика обнаружения</CardTitle>
-        <CardDescription>Количество дефектов за последние 7 дней</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-6">
         <ResponsiveContainer width="100%" height="100%" minHeight={300} className="outline-none" style={{ outline: 'none' }}>

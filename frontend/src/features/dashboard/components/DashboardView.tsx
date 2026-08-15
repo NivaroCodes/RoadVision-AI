@@ -4,9 +4,16 @@ import { SummaryCardsSkeleton } from './SummaryCardsSkeleton';
 import { TrendChart } from './TrendChart';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DateRangeFilter } from './DateRangeFilter';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useSearchParams } from 'react-router-dom';
 
 export function DashboardView() {
   const { data, isLoading, isError, refetch } = useDashboardSummary();
+  const [searchParams] = useSearchParams();
+  const fromParam = searchParams.get('from');
+  const toParam = searchParams.get('to');
+  const hasFilter = fromParam && toParam && !isNaN(Date.parse(fromParam)) && !isNaN(Date.parse(toParam));
 
   if (isLoading) {
     return (
@@ -52,10 +59,23 @@ export function DashboardView() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Ключевые показатели системы обнаружения дорожных дефектов.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">Ключевые показатели системы обнаружения дорожных дефектов.</p>
+        </div>
+        <DateRangeFilter />
       </div>
+
+      {hasFilter && (
+        <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:border-amber-400/50 dark:bg-amber-400/10 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4" color="currentColor" />
+          <AlertTitle className="font-semibold">Обратите внимание</AlertTitle>
+          <AlertDescription>
+            Фильтрация по датам пока не поддерживается сервером. Данные отображаются за весь доступный период.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="col-span-1 lg:col-span-4 flex">
