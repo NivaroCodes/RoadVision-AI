@@ -112,4 +112,10 @@
   .leaflet-control-attribution {
     display: none !important;
   }
+
+  /* Скрытие системной рамки фокуса для Recharts */
+  .recharts-wrapper,
+  .recharts-surface {
+    outline: none !important;
+  }
 }

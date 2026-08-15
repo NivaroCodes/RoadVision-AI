@@ -4,3 +4,8 @@ export interface DashboardSummary {
   fixed_defects: number;
   in_progress_defects: number;
 }
+
+export interface TrendPoint {
+  date: string;
+  count: number;
+}
