@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, func, cast, Date
 from sqlalchemy.orm import Session
 from app.models.defect import Defect, DefectStatus, DefectSeverity, DefectType
-from app.schemas.defect import DefectCreate
+from app.schemas.defect import DefectCreate, DefectUpdate
 
 class DefectRepository:
     def create(self, db: Session, obj_in: DefectCreate) -> Defect:
@@ -47,8 +47,10 @@ class DefectRepository:
     def get_all_for_map(self, db: Session) -> list[Defect]:
         stmt = select(Defect)
         return list(db.execute(stmt).scalars().all())
-    def update_status(self, db: Session, db_obj: Defect, status: DefectStatus) -> Defect:
-        db_obj.status = status
+    def update_defect(self, db: Session, db_obj: Defect, obj_in: DefectUpdate) -> Defect:
+        update_data = obj_in.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

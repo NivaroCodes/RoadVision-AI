@@ -6,8 +6,8 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { DefectMarker } from './DefectMarker';
 import { MapFilters } from './MapFilters';
-import { mockDefects } from '../mock/defects';
-import type { DefectMarker as DefectMarkerData, MapFilterValues } from '../types';
+import { useMapDefects } from '../hooks/useMapDefects';
+import type { MapFilterValues } from '../types';
 import '../map.css';
 
 const SHYMKENT_CENTER: [number, number] = [42.3417, 69.5901];
@@ -19,11 +19,6 @@ const INITIAL_FILTERS: MapFilterValues = {
   minConfidence: 0,
 };
 
-interface MapViewProps {
-  defects?: readonly DefectMarkerData[];
-  isLoading?: boolean;
-  error?: string | null;
-}
 
 function RecenterControl() {
   const map = useMap();
@@ -40,7 +35,9 @@ function RecenterControl() {
   );
 }
 
-export function MapView({ defects = mockDefects, isLoading = false, error = null }: MapViewProps) {
+export function MapView() {
+  const { data: defects = [], isLoading, error: queryError } = useMapDefects();
+  const error = queryError ? 'Не удалось загрузить данные с сервера' : null;
   const [filters, setFilters] = useState<MapFilterValues>(INITIAL_FILTERS);
 
   const filteredDefects = useMemo(() => {
@@ -67,6 +64,7 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
       low: filteredDefects.filter((defect) => defect.severity === 'low').length,
       medium: filteredDefects.filter((defect) => defect.severity === 'medium').length,
       high: filteredDefects.filter((defect) => defect.severity === 'high').length,
+      critical: filteredDefects.filter((defect) => defect.severity === 'critical').length,
     }),
     [filteredDefects],
   );
@@ -87,6 +85,7 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
           <li><span className="legend-dot bg-green-500" />Низкая {severityCounts.low}</li>
           <li><span className="legend-dot bg-orange-500" />Средняя {severityCounts.medium}</li>
           <li><span className="legend-dot bg-red-500" />Высокая {severityCounts.high}</li>
+          <li><span className="legend-dot bg-rose-600" />Критическая {severityCounts.critical}</li>
         </ul>
       </div>
 
@@ -99,6 +98,11 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-destructive/50 bg-destructive/10 p-5 text-center shadow-xl backdrop-blur" role="alert">
           <p className="font-semibold text-red-500">Ошибка загрузки дефектов</p>
           <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+        </div>
+      ) : defects.length === 0 ? (
+        <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
+          <p className="font-semibold text-foreground">Дефекты не обнаружены</p>
+          <p className="mt-1 text-sm text-muted-foreground">В базе данных пока нет зафиксированных дефектов.</p>
         </div>
       ) : filteredDefects.length === 0 ? (
         <div className="map-empty-state pointer-events-none absolute left-1/2 top-1/2 z-[500] w-[min(320px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border p-5 text-center shadow-xl backdrop-blur" role="status">
@@ -122,9 +126,9 @@ export function MapView({ defects = mockDefects, isLoading = false, error = null
         <RecenterControl />
 
         <MarkerClusterGroup chunkedLoading showCoverageOnHover={false}>
-          {!isLoading && !error ? filteredDefects.map((defect) => (
+          {filteredDefects.map((defect) => (
             <DefectMarker key={defect.id} defect={defect} />
-          )) : null}
+          ))}
         </MarkerClusterGroup>
       </MapContainer>
     </section>

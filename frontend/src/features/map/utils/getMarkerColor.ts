@@ -4,6 +4,7 @@ const MARKER_COLORS: Record<DefectSeverity, string> = {
   high: '#ef4444',
   medium: '#f97316',
   low: '#22c55e',
+  critical: '#e11d48',
 };
 
 export function getMarkerColor(severity: DefectSeverity): string {

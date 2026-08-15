@@ -12,6 +12,7 @@ const MARKER_ICONS = {
   low: createMarkerIcon('low'),
   medium: createMarkerIcon('medium'),
   high: createMarkerIcon('high'),
+  critical: createMarkerIcon('critical'),
 } as const;
 
 function createMarkerIcon(severity: DefectMarkerData['severity']): L.DivIcon {

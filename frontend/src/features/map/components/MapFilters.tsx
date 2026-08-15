@@ -35,6 +35,7 @@ const SEVERITY_OPTIONS = [
   { value: 'low', label: 'Низкая' },
   { value: 'medium', label: 'Средняя' },
   { value: 'high', label: 'Высокая' },
+  { value: 'critical', label: 'Критическая' },
 ] as const;
 
 const STATUS_OPTIONS = [
@@ -42,6 +43,7 @@ const STATUS_OPTIONS = [
   { value: 'detected', label: 'Обнаружено' },
   { value: 'in_progress', label: 'В работе' },
   { value: 'fixed', label: 'Исправлено' },
+  { value: 'rejected', label: 'Отклонено' },
 ] as const;
 
 function FilterSelect({ id, label, value, options, onChange }: FilterSelectProps) {

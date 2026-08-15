@@ -1,6 +1,6 @@
 export type DefectType = 'crack' | 'pothole' | 'net';
-export type DefectStatus = 'detected' | 'in_progress' | 'fixed';
-export type DefectSeverity = 'low' | 'medium' | 'high';
+export type DefectStatus = 'detected' | 'in_progress' | 'fixed' | 'rejected';
+export type DefectSeverity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface DefectMarker {
   id: number;

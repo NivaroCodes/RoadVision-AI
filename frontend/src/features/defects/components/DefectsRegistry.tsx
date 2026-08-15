@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react'
 import { Download, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { DefectMarker } from '@/features/map/types'
-import { mockDefects } from '@/features/map/mock/defects'
+import { useDefects } from '../hooks/useDefects'
 import { DefectEditDialog } from './DefectEditDialog'
 import { DefectsTable } from './DefectsTable'
 import { exportToCSV } from '../utils/exportToCSV'
 import '../defects.css'
 
 export function DefectsRegistry() {
-  const [defects, setDefects] = useState<DefectMarker[]>(mockDefects)
+  const { data: defects = [], isLoading, error } = useDefects()
   const [selectedDefect, setSelectedDefect] = useState<DefectMarker | null>(null)
   const [query, setQuery] = useState('')
 
@@ -24,10 +24,7 @@ export function DefectsRegistry() {
     )
   }, [defects, query])
 
-  const handleSave = (updatedDefect: DefectMarker) => {
-    setDefects((current) =>
-      current.map((defect) => (defect.id === updatedDefect.id ? updatedDefect : defect)),
-    )
+  const handleSave = () => {
     setSelectedDefect(null)
   }
 
@@ -61,7 +58,24 @@ export function DefectsRegistry() {
         </div>
       </div>
 
-      {filteredDefects.length > 0 ? (
+      {isLoading ? (
+        <div className="defects-surface rounded-xl border p-10 text-center animate-pulse">
+          <div className="h-8 w-1/3 bg-muted rounded mx-auto mb-4"></div>
+          <div className="h-4 w-full bg-muted rounded mb-2"></div>
+          <div className="h-4 w-full bg-muted rounded mb-2"></div>
+          <div className="h-4 w-2/3 bg-muted rounded mx-auto"></div>
+        </div>
+      ) : error ? (
+        <div className="defects-surface rounded-xl border border-destructive/50 bg-destructive/10 p-10 text-center">
+          <p className="font-medium text-red-500">Ошибка загрузки дефектов</p>
+          <p className="mt-1 text-sm text-muted-foreground">Попробуйте обновить страницу.</p>
+        </div>
+      ) : defects.length === 0 ? (
+        <div className="defects-surface rounded-xl border border-dashed p-10 text-center">
+          <p className="font-medium">Реестр дефектов пуст</p>
+          <p className="mt-1 text-sm text-muted-foreground">В базе данных пока нет зафиксированных дефектов.</p>
+        </div>
+      ) : filteredDefects.length > 0 ? (
         <DefectsTable defects={filteredDefects} onSelect={setSelectedDefect} />
       ) : (
         <div className="defects-surface rounded-xl border border-dashed p-10 text-center">

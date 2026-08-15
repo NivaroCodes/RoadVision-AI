@@ -10,10 +10,12 @@ export const defectSeverityLabels: Record<DefectSeverity, string> = {
   low: 'Низкая',
   medium: 'Средняя',
   high: 'Высокая',
+  critical: 'Критическая',
 }
 
 export const defectStatusLabels: Record<DefectStatus, string> = {
   detected: 'Обнаружено',
   in_progress: 'В работе',
   fixed: 'Исправлено',
+  rejected: 'Отклонено',
 }

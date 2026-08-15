@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app.models.defect import DefectStatus, DefectSeverity, DefectType
 from app.repositories.defect import DefectRepository
 from app.services.defect import DefectService
 from app.schemas.defect import DefectRead, DefectMapRead, DefectUpdate
+from app.services.websocket import manager
 
 router = APIRouter()
 
@@ -51,7 +53,7 @@ async def upload_defect(
         )
 
     try:
-        return defect_service.process_image_detection(
+        defect = defect_service.process_image_detection(
             db=db,
             file_content=content,
             filename=image.filename or "unknown.jpg",
@@ -59,6 +61,15 @@ async def upload_defect(
             longitude=longitude,
             address=address
         )
+        
+        await manager.broadcast({
+            "event": "DEFECT_CREATED",
+            "entity": "defect",
+            "id": defect.id,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        })
+        
+        return defect
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
@@ -121,20 +132,30 @@ def get_defect(id: int, db: Session = Depends(get_db)):
 
 
 @router.patch(
-    "/{id}/status", 
+    "/{id}", 
     response_model=DefectRead,
-    summary="Update defect status",
-    description="Update the status of an existing defect."
+    summary="Update defect",
+    description="Update an existing defect."
 )
-def update_defect_status(
+async def update_defect(
     id: int,
-    status: DefectStatus,
+    defect_in: DefectUpdate,
     db: Session = Depends(get_db)
 ):
     try:
         defect = defect_repo.get_by_id(db, id)
         if not defect:
             raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Defect not found")
-        return defect_repo.update_status(db, defect, status)
+        
+        updated_defect = defect_repo.update_defect(db, defect, defect_in)
+        
+        await manager.broadcast({
+            "event": "DEFECT_UPDATED",
+            "entity": "defect",
+            "id": updated_defect.id,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        })
+        
+        return updated_defect
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")

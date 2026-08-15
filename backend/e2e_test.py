@@ -63,3 +63,11 @@ print(f"Status Code: {response.status_code}")
 print("Response:")
 print(json.dumps(response.json(), indent=2, ensure_ascii=False))
 print("\n")
+
+print('=== 6. PATCH /api/v1/defects/{id} ===')
+response = client.patch(f'/api/v1/defects/{defect_id}', json={'status': 'fixed', 'severity': 'low'})
+print(f'Status Code: {response.status_code}')
+print('Response:')
+print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+print('\n')
+
