@@ -1,17 +1,6 @@
 import { Popup } from 'react-leaflet';
 import type { DefectMarker } from '../types';
-
-const LABELS = {
-  crack: 'Трещина',
-  pothole: 'Яма',
-  net: 'Сетка трещин',
-  detected: 'Обнаружен',
-  in_progress: 'В работе',
-  fixed: 'Исправлен',
-  low: 'Низкая',
-  medium: 'Средняя',
-  high: 'Высокая',
-} as const;
+import { defectTypeLabels, defectStatusLabels, defectSeverityLabels } from '@/features/defects/labels';
 
 interface DefectPopupProps {
   defect: DefectMarker;
@@ -27,15 +16,15 @@ export function DefectPopup({ defect }: DefectPopupProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Дефект #{defect.id}
           </p>
-          <h3 className="text-base font-semibold text-foreground">{LABELS[defect.type]}</h3>
+          <h3 className="text-base font-semibold text-foreground">{defectTypeLabels[defect.type]}</h3>
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
           <dt className="text-muted-foreground">Статус</dt>
-          <dd className="text-right font-medium text-foreground">{LABELS[defect.status]}</dd>
+          <dd className="text-right font-medium text-foreground">{defectStatusLabels[defect.status]}</dd>
           <dt className="text-muted-foreground">Критичность</dt>
           <dd className="text-right font-medium capitalize text-foreground">
-            {LABELS[defect.severity]}
+            {defectSeverityLabels[defect.severity]}
           </dd>
           <dt className="text-muted-foreground">Уверенность</dt>
           <dd className="text-right font-medium text-foreground">
