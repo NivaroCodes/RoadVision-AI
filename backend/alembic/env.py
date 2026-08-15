@@ -12,7 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from app.core.config import settings
 from app.core.db import Base
-from app.models.defect import Defect
+from app.models import *
 
 config = context.config
 
