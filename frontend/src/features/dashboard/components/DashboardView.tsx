@@ -1,6 +1,7 @@
 import { useDashboardSummary } from '../hooks/useDashboardSummary';
 import { SummaryCards } from './SummaryCards';
 import { SummaryCardsSkeleton } from './SummaryCardsSkeleton';
+import { TrendChart } from './TrendChart';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,7 +15,14 @@ export function DashboardView() {
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">Загрузка аналитики...</p>
         </div>
-        <SummaryCardsSkeleton />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+          <div className="col-span-1 lg:col-span-4 h-full">
+            <TrendChart />
+          </div>
+          <div className="col-span-1 lg:col-span-3">
+            <SummaryCardsSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
@@ -48,7 +56,15 @@ export function DashboardView() {
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-muted-foreground">Ключевые показатели системы обнаружения дорожных дефектов.</p>
       </div>
-      <SummaryCards data={data} />
+      
+      <div className="grid gap-6 lg:grid-cols-7">
+        <div className="col-span-1 lg:col-span-4 flex">
+          <TrendChart />
+        </div>
+        <div className="col-span-1 lg:col-span-3">
+          <SummaryCards data={data} />
+        </div>
+      </div>
     </div>
   );
 }

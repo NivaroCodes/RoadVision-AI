@@ -1,4 +1,5 @@
-from sqlalchemy import select, func
+from datetime import datetime, timedelta
+from sqlalchemy import select, func, cast, Date
 from sqlalchemy.orm import Session
 from app.models.defect import Defect, DefectStatus, DefectSeverity, DefectType
 from app.schemas.defect import DefectCreate
@@ -72,3 +73,17 @@ class DefectRepository:
             "fixed_defects": fixed_defects,
             "in_progress_defects": in_progress_defects
         }
+
+    def get_daily_statistics(self, db: Session, days: int = 7) -> list[dict]:
+        cutoff_date = (datetime.utcnow() - timedelta(days=days)).date()
+        date_expr = cast(Defect.created_at, Date)
+        
+        stmt = (
+            select(date_expr.label("date"), func.count(Defect.id).label("count"))
+            .where(date_expr >= cutoff_date)
+            .group_by(date_expr)
+            .order_by(date_expr.asc())
+        )
+        
+        results = db.execute(stmt).all()
+        return [{"date": row.date, "count": row.count} for row in results]
