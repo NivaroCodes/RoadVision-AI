@@ -7,8 +7,8 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
         type="button"
         className="-m-2.5 p-2.5 text-foreground lg:hidden"
         onClick={toggleSidebar}
+        aria-label="Открыть боковое меню"
       >
-        <span className="sr-only">Open sidebar</span>
         <Menu className="h-6 w-6" aria-hidden="true" />
       </button>
 

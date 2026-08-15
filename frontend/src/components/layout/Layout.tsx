@@ -15,7 +15,7 @@ export default function Layout() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header toggleSidebar={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 overflow-y-auto bg-muted/20 p-4 sm:p-6 lg:p-8">
+        <main id="main-content" className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

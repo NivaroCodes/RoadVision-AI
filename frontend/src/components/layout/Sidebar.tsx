@@ -19,9 +19,11 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     <>
       {/* Mobile backdrop */}
       {isOpen && (
-        <div 
+        <button
+          type="button"
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={onClose}
+          aria-label="Закрыть боковое меню"
         />
       )}
 
@@ -37,7 +39,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
             </div>
             <span className="text-xl font-bold tracking-tight">RoadVision AI</span>
           </div>
-          <button onClick={onClose} className="lg:hidden text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden" aria-label="Закрыть боковое меню">
             <X className="h-6 w-6" />
           </button>
         </div>
