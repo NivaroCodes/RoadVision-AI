@@ -89,7 +89,7 @@ export default function UploadPage() {
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('image', file);
     formData.append('latitude', lat.toString());
     formData.append('longitude', lng.toString());
 
