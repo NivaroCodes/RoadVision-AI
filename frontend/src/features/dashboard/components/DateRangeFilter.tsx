@@ -21,10 +21,10 @@ export function DateRangeFilter({
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
 
-  const parsedFrom = fromParam ? parseISO(fromParam) : undefined;
-  const parsedTo = toParam ? parseISO(toParam) : undefined;
-
   const dateRange: DateRange | undefined = React.useMemo(() => {
+    const parsedFrom = fromParam ? parseISO(fromParam) : undefined;
+    const parsedTo = toParam ? parseISO(toParam) : undefined;
+
     if (parsedFrom && isValid(parsedFrom) && parsedTo && isValid(parsedTo)) {
       if (parsedFrom > parsedTo) {
         return { from: parsedTo, to: parsedFrom };
@@ -32,7 +32,7 @@ export function DateRangeFilter({
       return { from: parsedFrom, to: parsedTo };
     }
     return undefined;
-  }, [parsedFrom, parsedTo]);
+  }, [fromParam, toParam]);
 
   const [date, setDate] = React.useState<DateRange | undefined>(dateRange);
   const [isOpen, setIsOpen] = React.useState(false);
