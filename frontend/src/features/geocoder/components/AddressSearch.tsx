@@ -11,19 +11,28 @@ export function AddressSearch() {
   const [results, setResults] = useState<GeocoderResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const debouncedQuery = useDebounce(query.trim(), 1000)
 
   useEffect(() => {
     if (debouncedQuery.length < 3) {
       setResults([])
       setIsLoading(false)
+      setError(null)
       return
     }
     const controller = new AbortController()
     setIsLoading(true)
+    setError(null)
     searchAddresses(debouncedQuery, controller.signal)
       .then((items) => { setResults(items); setIsOpen(true) })
-      .catch((error: unknown) => { if (!(error instanceof DOMException && error.name === 'AbortError')) setResults([]) })
+      .catch((err: unknown) => { 
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          setResults([]);
+          setError('Ошибка поиска адреса. Попробуйте позже.');
+          setIsOpen(true);
+        }
+      })
       .finally(() => { if (!controller.signal.aborted) setIsLoading(false) })
     return () => controller.abort()
   }, [debouncedQuery])
@@ -37,6 +46,7 @@ export function AddressSearch() {
   const clearSearch = () => {
     setQuery('')
     setResults([])
+    setError(null)
     setIsOpen(false)
   }
 
@@ -44,7 +54,7 @@ export function AddressSearch() {
     <div className="absolute bottom-20 right-3 z-[600] w-[min(360px,calc(100%-1.5rem))] sm:right-4">
       {isOpen && debouncedQuery.length >= 3 && !isLoading ? (
         <div className="absolute bottom-full mb-2 w-full overflow-hidden rounded-xl border bg-card/95 shadow-xl backdrop-blur" role="listbox" aria-label="Найденные адреса">
-          {results.length > 0 ? results.map((result) => <button type="button" key={result.id} onClick={() => selectResult(result)} className="flex w-full gap-3 border-b px-3 py-3 text-left text-sm transition last:border-b-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" role="option"><MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" /><span className="line-clamp-2">{result.label}</span></button>) : <p className="px-4 py-5 text-center text-sm text-muted-foreground" role="status">Адреса не найдены</p>}
+          {error ? <p className="px-4 py-5 text-center text-sm font-medium text-destructive" role="alert">{error}</p> : results.length > 0 ? results.map((result) => <button type="button" key={result.id} onClick={() => selectResult(result)} className="flex w-full gap-3 border-b px-3 py-3 text-left text-sm transition last:border-b-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" role="option"><MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" /><span className="line-clamp-2">{result.label}</span></button>) : <p className="px-4 py-5 text-center text-sm text-muted-foreground" role="status">Адреса не найдены</p>}
         </div>
       ) : null}
       <label className="relative block" htmlFor="address-geocoder-search">
