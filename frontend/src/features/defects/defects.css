@@ -14,22 +14,16 @@
 }
 
 .defects-primary-button {
-  background: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .defects-primary-button:hover {
-  background: color-mix(in oklab, var(--primary) 82%, transparent) !important;
+  background: color-mix(in oklab, var(--primary) 82%, transparent);
 }
 
-.defects-dialog,
 .defects-select-content {
-  background: var(--popover) !important;
-  border-color: var(--border) !important;
-  color: var(--popover-foreground) !important;
-}
-
-.defects-dialog-footer {
-  background: color-mix(in oklab, var(--muted) 72%, var(--popover)) !important;
-  border-color: var(--border) !important;
+  background: #0a0a0a;
+  border-color: rgb(64 64 64);
+  color: rgb(245 245 245);
 }

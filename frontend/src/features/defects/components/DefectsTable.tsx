@@ -31,10 +31,10 @@ export function DefectsTable({ defects, onSelect }: DefectsTableProps) {
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-20">ID</TableHead>
-              <TableHead>Тип</TableHead>
-              <TableHead>Критичность</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead className="text-right">Уверенность ИИ</TableHead>
+              <TableHead className="min-w-36">Тип</TableHead>
+              <TableHead className="min-w-32">Критичность</TableHead>
+              <TableHead className="min-w-32">Статус</TableHead>
+              <TableHead className="min-w-36 text-right">Уверенность ИИ</TableHead>
               <TableHead className="min-w-56">Адрес</TableHead>
             </TableRow>
           </TableHeader>
@@ -56,8 +56,8 @@ export function DefectsTable({ defects, onSelect }: DefectsTableProps) {
                 <TableCell className="text-right font-mono font-medium">
                   {Math.round(defect.confidence * 100)}%
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {defect.address ?? 'Шымкент'}
+                <TableCell className="max-w-80 text-muted-foreground">
+                  <span className="block truncate" title={defect.address ?? 'Шымкент'}>{defect.address ?? 'Шымкент'}</span>
                 </TableCell>
               </TableRow>
             ))}

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, FileText, Loader2 } from 'lucide-react'
+import { AlertCircle, Download, FileText, Loader2 } from 'lucide-react'
 import { format, startOfMonth } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -24,6 +24,7 @@ export function ReportExportDialog({ defects, summary, period, triggerClassName 
   const [from, setFrom] = useState(period?.from ?? format(startOfMonth(new Date()), 'yyyy-MM-dd'))
   const [to, setTo] = useState(period?.to ?? today)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
   const filteredData = useMemo(() => {
     if (mode === 'filtered') return defects;
@@ -50,22 +51,33 @@ export function ReportExportDialog({ defects, summary, period, triggerClassName 
 
   const handleExport = async () => {
     if (!reportRef.current) return
+    setGenerationError(null)
     setIsGenerating(true)
     try {
       await generatePdf({ element: reportRef.current, filename: `roadvision-report-${today}.pdf` })
       setOpen(false)
-    } finally { setIsGenerating(false) }
+    } catch {
+      setGenerationError('Не удалось сформировать PDF. Попробуйте ещё раз.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) setGenerationError(null)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" className={triggerClassName} />}><FileText data-icon="inline-start" aria-hidden="true" />Экспорт отчёта</DialogTrigger>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader><DialogTitle>Экспорт PDF-отчёта</DialogTitle><DialogDescription>Выберите состав и период документа. Генерация выполняется только в браузере.</DialogDescription></DialogHeader>
-        <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium">Тип отчёта</legend>{REPORT_OPTIONS.map((option) => <label key={option.value} className="flex cursor-pointer gap-3 rounded-lg border p-3 transition has-[:checked]:border-primary has-[:checked]:bg-primary/5"><input type="radio" name="report-mode" value={option.value} checked={mode === option.value} onChange={() => setMode(option.value)} className="mt-1" /><span><span className="block font-medium">{option.title}</span><span className="text-xs text-muted-foreground">{option.description}</span></span></label>)}</fieldset>
-        {mode === 'date-range' ? <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-medium">С даты<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="h-10 rounded-md border bg-background px-3 font-normal" /></label><label className="grid gap-1.5 text-sm font-medium">По дату<input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} className="h-10 rounded-md border bg-background px-3 font-normal" /></label></div> : null}
-        <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">В отчёт попадут сводные показатели, диаграмма критичности и таблица из {filteredData.length} дефектов.</div>
-        <DialogFooter><Button variant="outline" onClick={() => setOpen(false)} disabled={isGenerating}>Отмена</Button><Button onClick={handleExport} disabled={isGenerating || filteredData.length === 0}>{isGenerating ? <Loader2 data-icon="inline-start" className="animate-spin" aria-hidden="true" /> : <Download data-icon="inline-start" aria-hidden="true" />}{isGenerating ? 'Создание PDF…' : 'Скачать PDF'}</Button></DialogFooter>
+        <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium text-neutral-200">Тип отчёта</legend>{REPORT_OPTIONS.map((option) => <label key={option.value} className="flex min-h-16 cursor-pointer gap-3 rounded-lg border border-neutral-800 bg-neutral-950 p-3 transition-colors hover:border-neutral-700 hover:bg-neutral-900 has-[:checked]:border-neutral-500 has-[:checked]:bg-neutral-900"><input type="radio" name="report-mode" value={option.value} checked={mode === option.value} onChange={() => setMode(option.value)} className="mt-1 accent-white" /><span><span className="block font-medium text-neutral-100">{option.title}</span><span className="text-xs text-neutral-400">{option.description}</span></span></label>)}</fieldset>
+        {mode === 'date-range' ? <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-medium text-neutral-200">С даты<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="h-11 min-w-0 rounded-md border border-neutral-700 bg-neutral-950 px-3 font-normal text-white [color-scheme:dark] focus-visible:border-neutral-400" /></label><label className="grid gap-1.5 text-sm font-medium text-neutral-200">По дату<input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} className="h-11 min-w-0 rounded-md border border-neutral-700 bg-neutral-950 px-3 font-normal text-white [color-scheme:dark] focus-visible:border-neutral-400" /></label></div> : null}
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm leading-relaxed text-neutral-300">В отчёт попадут сводные показатели, диаграмма критичности и таблица из {filteredData.length} дефектов.</div>
+        {generationError ? <div className="flex items-start gap-2 rounded-lg border border-red-900 bg-red-950/60 p-3 text-sm text-red-200" role="alert"><AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{generationError}</div> : null}
+        <DialogFooter><Button variant="outline" className="w-full border-neutral-700 bg-transparent text-neutral-100 hover:bg-neutral-800 hover:text-white sm:w-auto" onClick={() => setOpen(false)} disabled={isGenerating}>Отмена</Button><Button className="w-full bg-white text-black hover:bg-neutral-200 sm:w-auto" onClick={handleExport} disabled={isGenerating || filteredData.length === 0}>{isGenerating ? <Loader2 data-icon="inline-start" className="animate-spin" aria-hidden="true" /> : <Download data-icon="inline-start" aria-hidden="true" />}{isGenerating ? 'Создание PDF…' : 'Скачать PDF'}</Button></DialogFooter>
         <div className="fixed left-[-10000px] top-0 w-[794px] bg-white p-12 font-sans text-zinc-950" ref={reportRef} aria-hidden="true">
           <div className="flex items-center justify-between border-b-2 border-zinc-950 pb-5"><div><p className="text-2xl font-black">RoadVision AI</p><p className="mt-1 text-sm text-zinc-500">Мониторинг дорожных дефектов</p></div><div className="text-right text-sm"><p className="font-semibold">Отчёт по дефектам</p><p className="text-zinc-500">{reportPeriod}</p></div></div>
           <div className="mt-7 grid grid-cols-4 gap-3">{[['Всего', totals.total_defects], ['Критические', totals.critical_defects], ['В работе', totals.in_progress_defects], ['Исправлено', totals.fixed_defects]].map(([label, value]) => <div key={label} className="rounded-lg border border-zinc-200 bg-zinc-50 p-4"><p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}</div>

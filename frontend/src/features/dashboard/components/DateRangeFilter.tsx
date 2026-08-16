@@ -26,7 +26,6 @@ export function DateRangeFilter({
 
   const dateRange: DateRange | undefined = React.useMemo(() => {
     if (parsedFrom && isValid(parsedFrom) && parsedTo && isValid(parsedTo)) {
-      // Validate that from <= to, if not, swap them to prevent UI glitches
       if (parsedFrom > parsedTo) {
         return { from: parsedTo, to: parsedFrom };
       }
@@ -37,10 +36,18 @@ export function DateRangeFilter({
 
   const [date, setDate] = React.useState<DateRange | undefined>(dateRange);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isWideViewport, setIsWideViewport] = React.useState(() => window.matchMedia('(min-width: 768px)').matches);
 
   React.useEffect(() => {
     setDate(dateRange);
   }, [dateRange]);
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const updateViewport = (event: MediaQueryListEvent) => setIsWideViewport(event.matches);
+    mediaQuery.addEventListener('change', updateViewport);
+    return () => mediaQuery.removeEventListener('change', updateViewport);
+  }, []);
 
   const updateUrl = (newDate: DateRange | undefined) => {
     setDate(newDate);
@@ -88,7 +95,7 @@ export function DateRangeFilter({
   const hasFilter = !!fromParam || !!toParam;
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger 
           render={
@@ -96,7 +103,7 @@ export function DateRangeFilter({
               id="date"
               variant={'outline'}
               className={cn(
-                'w-[280px] justify-start text-left font-normal',
+                'w-full min-w-0 justify-start overflow-hidden text-left font-normal sm:w-[280px]',
                 !date && 'text-muted-foreground'
               )}
             />
@@ -116,9 +123,9 @@ export function DateRangeFilter({
             <span>Выберите период</span>
           )}
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-x-hidden p-0" align="end">
           <div className="flex flex-col md:flex-row">
-            <div className="flex flex-col gap-2 border-r p-4">
+            <div className="flex flex-col gap-2 border-b border-neutral-800 p-4 md:border-r md:border-b-0">
               <span className="text-sm font-medium mb-1">Пресеты</span>
               <Button
                 variant="outline"
@@ -151,7 +158,7 @@ export function DateRangeFilter({
                 defaultMonth={date?.from}
                 selected={date}
                 onSelect={handleSelect}
-                numberOfMonths={2}
+                numberOfMonths={isWideViewport ? 2 : 1}
                 locale={ru}
               />
             </div>
