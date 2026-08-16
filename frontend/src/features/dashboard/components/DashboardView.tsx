@@ -7,10 +7,13 @@ import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from './DateRangeFilter';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams } from 'react-router-dom';
+import { useDefects } from '@/features/defects/hooks/useDefects';
+import { ReportExportDialog } from '@/features/reporting';
 
 export function DashboardView() {
   const { data, isLoading, isError, refetch } = useDashboardSummary();
   const [searchParams] = useSearchParams();
+  const { data: defects = [] } = useDefects();
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
   const hasFilter = fromParam && toParam && !isNaN(Date.parse(fromParam)) && !isNaN(Date.parse(toParam));
@@ -64,7 +67,10 @@ export function DashboardView() {
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">Ключевые показатели системы обнаружения дорожных дефектов.</p>
         </div>
-        <DateRangeFilter />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <ReportExportDialog defects={defects} summary={data} period={{ from: fromParam ?? undefined, to: toParam ?? undefined }} />
+          <DateRangeFilter />
+        </div>
       </div>
 
       {hasFilter && (

@@ -11,6 +11,7 @@ export interface DefectMarker {
   longitude: number;
   confidence: number;
   address?: string;
+  created_at?: string;
 }
 
 export interface MapFilterValues {
