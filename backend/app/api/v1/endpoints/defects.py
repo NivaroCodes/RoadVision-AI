@@ -86,6 +86,8 @@ def get_defects(
     type: Optional[DefectType] = Query(None, description="Filter by defect type"),
     status: Optional[DefectStatus] = Query(None, description="Filter by defect status"),
     severity: Optional[DefectSeverity] = Query(None, description="Filter by defect severity"),
+    start_date: Optional[datetime] = Query(None, description="Filter by start date"),
+    end_date: Optional[datetime] = Query(None, description="Filter by end date"),
     db: Session = Depends(get_db)
 ):
     try:
@@ -95,7 +97,9 @@ def get_defects(
             limit=limit,
             type=type,
             status=status,
-            severity=severity
+            severity=severity,
+            start_date=start_date,
+            end_date=end_date
         )
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")

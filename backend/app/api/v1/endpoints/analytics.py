@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.repositories.defect import DefectRepository
@@ -18,9 +19,13 @@ from sqlalchemy.exc import SQLAlchemyError
     summary="Get analytics summary",
     description="Returns aggregate statistics about all defects in the system."
 )
-def get_analytics_summary(db: Session = Depends(get_db)):
+def get_analytics_summary(
+    start_date: datetime | None = Query(None, description="Filter by start date"),
+    end_date: datetime | None = Query(None, description="Filter by end date"),
+    db: Session = Depends(get_db)
+):
     try:
-        return defect_repo.get_analytics_summary(db)
+        return defect_repo.get_analytics_summary(db, start_date=start_date, end_date=end_date)
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
@@ -30,8 +35,12 @@ def get_analytics_summary(db: Session = Depends(get_db)):
     summary="Get defect trends",
     description="Returns the number of defects detected per day for the last 7 days."
 )
-def get_analytics_trends(db: Session = Depends(get_db)):
+def get_analytics_trends(
+    start_date: datetime | None = Query(None, description="Filter by start date"),
+    end_date: datetime | None = Query(None, description="Filter by end date"),
+    db: Session = Depends(get_db)
+):
     try:
-        return defect_repo.get_daily_statistics(db, days=7)
+        return defect_repo.get_daily_statistics(db, days=7, start_date=start_date, end_date=end_date)
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")

@@ -6,13 +6,14 @@ import { LineChart, CalendarDays } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 export function TrendChart() {
-  const { data, isLoading, isError } = useAnalyticsTrends();
   const [searchParams] = useSearchParams();
-  const fromParam = searchParams.get('from');
-  const toParam = searchParams.get('to');
+  const fromParam = searchParams.get('from') || undefined;
+  const toParam = searchParams.get('to') || undefined;
+  
+  const { data, isLoading, isError } = useAnalyticsTrends({ from: fromParam, to: toParam });
   const hasFilter = fromParam && toParam && !isNaN(Date.parse(fromParam)) && !isNaN(Date.parse(toParam));
   const description = hasFilter 
-    ? "Количество дефектов за последние 7 дней (данные не фильтруются)"
+    ? `Динамика дефектов за выбранный период`
     : "Количество дефектов за последние 7 дней";
 
   if (isLoading) {

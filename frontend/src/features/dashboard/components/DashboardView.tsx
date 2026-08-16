@@ -5,19 +5,18 @@ import { TrendChart } from './TrendChart';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from './DateRangeFilter';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams } from 'react-router-dom';
 import { useDefects } from '@/features/defects/hooks/useDefects';
 import { ReportExportDialog } from '@/features/reporting';
 
 export function DashboardView() {
-  const { data, isLoading, isError, refetch } = useDashboardSummary();
   const [searchParams] = useSearchParams();
-  const { data: defects = [] } = useDefects();
-  const fromParam = searchParams.get('from');
-  const toParam = searchParams.get('to');
-  const hasFilter = fromParam && toParam && !isNaN(Date.parse(fromParam)) && !isNaN(Date.parse(toParam));
-
+  const fromParam = searchParams.get('from') || undefined;
+  const toParam = searchParams.get('to') || undefined;
+  
+  const { data, isLoading, isError, refetch } = useDashboardSummary({ from: fromParam, to: toParam });
+  const { data: defects = [] } = useDefects({ from: fromParam, to: toParam });
+  
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -73,15 +72,6 @@ export function DashboardView() {
         </div>
       </div>
 
-      {hasFilter && (
-        <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-600 dark:border-amber-400/50 dark:bg-amber-400/10 dark:text-amber-400">
-          <AlertTriangle className="h-4 w-4" color="currentColor" />
-          <AlertTitle className="font-semibold">Обратите внимание</AlertTitle>
-          <AlertDescription>
-            Фильтрация по датам пока не поддерживается сервером. Данные отображаются за весь доступный период.
-          </AlertDescription>
-        </Alert>
-      )}
       
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="col-span-1 lg:col-span-4 flex">
