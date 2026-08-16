@@ -1,73 +1,105 @@
-import json
 import io
+import os
+import time
+
 from fastapi.testclient import TestClient
-from sqlalchemy import text
-from app.main import app
+
+from app.auth.security import get_password_hash
 from app.core.db import SessionLocal
+from app.main import app
+from app.models.defect import Defect
+from app.models.user import User, UserRole
 
 client = TestClient(app)
+suffix = str(time.time_ns())
+resident_email = f"resident-{suffix}@example.com"
+road_email = f"road-{suffix}@example.com"
+admin_email = f"admin-{suffix}@example.com"
+password = "RoadVision123!"
+created_defect_id: int | None = None
+image_path: str | None = None
 
-print("=== 1. POST /api/v1/defects/upload ===")
-dummy_image = io.BytesIO(b"fake_image_content")
-files = {"image": ("test.jpg", dummy_image, "image/jpeg")}
-data = {"latitude": 42.3, "longitude": 69.6, "address": "Shymkent City"}
 
-response = client.post("/api/v1/defects/upload", data=data, files=files)
-print(f"Status Code: {response.status_code}")
-created_defect = response.json()
-print("Response:")
-print(json.dumps(created_defect, indent=2, ensure_ascii=False))
-print("\n")
+def expect(response_status: int, expected: int, step: str) -> None:
+    if response_status != expected:
+        raise AssertionError(f"{step}: expected {expected}, received {response_status}")
 
-defect_id = created_defect.get("id")
 
-print("=== 2. Check Database using Raw SQL ===")
-db = SessionLocal()
+def login(email: str) -> dict[str, str]:
+    response = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    expect(response.status_code, 200, f"login {email}")
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
 try:
-    sql = text("SELECT id, type, status, severity, latitude, longitude, image_url FROM defects WHERE id = :id")
-    result = db.execute(sql, {"id": defect_id}).fetchone()
-    print("SQL Row:")
-    if result:
-        print({
-            "id": result[0],
-            "type": result[1],
-            "status": result[2],
-            "severity": result[3],
-            "latitude": result[4],
-            "longitude": result[5],
-            "image_url": result[6]
-        })
-    else:
-        print("Not found in DB!")
+    expect(client.get("/api/v1/defects/").status_code, 401, "anonymous registry")
+
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={"email": resident_email, "password": password},
+    )
+    expect(registration.status_code, 201, "resident registration")
+    if registration.json()["role"] != "resident":
+        raise AssertionError("public registration must create a resident")
+
+    db = SessionLocal()
+    try:
+        db.add_all(
+            [
+                User(email=road_email, hashed_password=get_password_hash(password), role=UserRole.road_service),
+                User(email=admin_email, hashed_password=get_password_hash(password), role=UserRole.admin),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    resident_headers = login(resident_email)
+    road_headers = login(road_email)
+    admin_headers = login(admin_email)
+
+    expect(client.get("/api/v1/auth/me", headers=resident_headers).status_code, 200, "current user")
+    upload = client.post(
+        "/api/v1/defects/upload",
+        headers=resident_headers,
+        data={"latitude": 42.3, "longitude": 69.6, "address": "Shymkent"},
+        files={"image": ("test.jpg", io.BytesIO(b"image-content"), "image/jpeg")},
+    )
+    expect(upload.status_code, 200, "resident upload")
+    created_defect_id = upload.json()["id"]
+    image_path = upload.json()["image_url"].lstrip("/")
+
+    mine = client.get("/api/v1/defects/mine", headers=resident_headers)
+    expect(mine.status_code, 200, "resident own requests")
+    if created_defect_id not in [item["id"] for item in mine.json()]:
+        raise AssertionError("created request is missing from resident history")
+
+    expect(client.get("/api/v1/defects/", headers=resident_headers).status_code, 403, "resident registry")
+    expect(client.get("/api/v1/analytics/summary", headers=resident_headers).status_code, 403, "resident analytics")
+    expect(client.get("/api/v1/users/", headers=resident_headers).status_code, 403, "resident users")
+    expect(client.patch(f"/api/v1/defects/{created_defect_id}", headers=resident_headers, json={"status": "fixed"}).status_code, 403, "resident update")
+    expect(client.get("/api/v1/defects/", headers=road_headers).status_code, 200, "road registry")
+    expect(client.get("/api/v1/defects/map", headers=road_headers).status_code, 200, "road map")
+    expect(client.post("/api/v1/defects/upload", headers=road_headers, data={"latitude": 42.3, "longitude": 69.6}, files={"image": ("test.jpg", io.BytesIO(b"image-content"), "image/jpeg")}).status_code, 403, "road upload")
+    expect(client.patch(f"/api/v1/defects/{created_defect_id}", headers=road_headers, json={"status": "in_progress"}).status_code, 200, "road update")
+    expect(client.get("/api/v1/analytics/summary", headers=road_headers).status_code, 403, "road analytics")
+    expect(client.get("/api/v1/analytics/summary", headers=admin_headers).status_code, 200, "admin analytics")
+    expect(client.get("/api/v1/users/", headers=admin_headers).status_code, 200, "admin users")
+    expect(client.post("/api/v1/auth/logout", headers=resident_headers).status_code, 204, "logout")
+    print("Authentication and RBAC end-to-end checks passed")
 finally:
-    db.close()
-print("\n")
-
-print("=== 3. GET /api/v1/defects ===")
-response = client.get("/api/v1/defects/")
-print(f"Status Code: {response.status_code}")
-print("Response (first item):")
-print(json.dumps(response.json()[0] if response.json() else [], indent=2, ensure_ascii=False))
-print("\n")
-
-print(f"=== 4. GET /api/v1/defects/{defect_id} ===")
-response = client.get(f"/api/v1/defects/{defect_id}")
-print(f"Status Code: {response.status_code}")
-print("Response:")
-print(json.dumps(response.json(), indent=2, ensure_ascii=False))
-print("\n")
-
-print("=== 5. GET /api/v1/analytics/summary ===")
-response = client.get("/api/v1/analytics/summary")
-print(f"Status Code: {response.status_code}")
-print("Response:")
-print(json.dumps(response.json(), indent=2, ensure_ascii=False))
-print("\n")
-
-print('=== 6. PATCH /api/v1/defects/{id} ===')
-response = client.patch(f'/api/v1/defects/{defect_id}', json={'status': 'fixed', 'severity': 'low'})
-print(f'Status Code: {response.status_code}')
-print('Response:')
-print(json.dumps(response.json(), indent=2, ensure_ascii=False))
-print('\n')
-
+    db = SessionLocal()
+    try:
+        if created_defect_id is not None:
+            defect = db.get(Defect, created_defect_id)
+            if defect is not None:
+                db.delete(defect)
+        for email in (resident_email, road_email, admin_email):
+            user = db.query(User).filter(User.email == email).first()
+            if user is not None:
+                db.delete(user)
+        db.commit()
+    finally:
+        db.close()
+    if image_path and os.path.exists(image_path):
+        os.remove(image_path)

@@ -6,7 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 
 from app.core.db import get_db
+from app.auth.dependencies import get_current_user, require_staff, require_submitter
 from app.models.defect import DefectStatus, DefectSeverity, DefectType
+from app.models.user import User, UserRole
 from app.repositories.defect import DefectRepository
 from app.services.defect import DefectService
 from app.schemas.defect import DefectRead, DefectMapRead, DefectUpdate
@@ -17,7 +19,7 @@ router = APIRouter()
 defect_repo = DefectRepository()
 defect_service = DefectService(defect_repo)
 
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/jpg"]
 
 @router.post(
@@ -31,7 +33,8 @@ async def upload_defect(
     longitude: float = Form(..., ge=-180, le=180, description="Longitude of the defect"),
     address: Optional[str] = Form(None, description="Optional address of the defect"),
     image: UploadFile = File(..., description="Image file (JPG/PNG), max 10MB"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_submitter),
 ):
     if image.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -59,7 +62,8 @@ async def upload_defect(
             filename=image.filename or "unknown.jpg",
             latitude=latitude,
             longitude=longitude,
-            address=address
+            address=address,
+            owner_id=current_user.id,
         )
         
         await manager.broadcast({
@@ -88,7 +92,8 @@ def get_defects(
     severity: Optional[DefectSeverity] = Query(None, description="Filter by defect severity"),
     start_date: Optional[datetime] = Query(None, description="Filter by start date"),
     end_date: Optional[datetime] = Query(None, description="Filter by end date"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
 ):
     try:
         return defect_repo.get_multi(
@@ -111,9 +116,23 @@ def get_defects(
     summary="Get all defects for map visualization",
     description="Fetch a lightweight representation of all defects for mapping."
 )
-def get_map_defects(db: Session = Depends(get_db)):
+def get_map_defects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
+):
     try:
         return defect_repo.get_all_for_map(db)
+    except SQLAlchemyError:
+        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
+
+
+@router.get("/mine", response_model=List[DefectRead])
+def get_my_defects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return defect_repo.get_by_owner(db, current_user.id)
     except SQLAlchemyError:
         raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
@@ -124,7 +143,11 @@ def get_map_defects(db: Session = Depends(get_db)):
     summary="Get a specific defect by ID",
     description="Fetch full details of a specific defect by its ID."
 )
-def get_defect(id: int, db: Session = Depends(get_db)):
+def get_defect(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
         defect = defect_repo.get_by_id(db, id)
     except SQLAlchemyError:
@@ -132,6 +155,8 @@ def get_defect(id: int, db: Session = Depends(get_db)):
         
     if not defect:
         raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Defect not found")
+    if current_user.role == UserRole.resident and defect.owner_id != current_user.id:
+        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Access denied")
     return defect
 
 
@@ -144,7 +169,8 @@ def get_defect(id: int, db: Session = Depends(get_db)):
 async def update_defect(
     id: int,
     defect_in: DefectUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
 ):
     try:
         defect = defect_repo.get_by_id(db, id)

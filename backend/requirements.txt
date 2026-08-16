@@ -6,6 +6,5 @@ alembic
 psycopg[binary]
 python-multipart
 PyJWT
-passlib[bcrypt]
 bcrypt
 email-validator

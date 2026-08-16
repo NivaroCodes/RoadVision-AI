@@ -8,14 +8,11 @@ export function useWebSocketSync() {
 
   useEffect(() => {
     function connect() {
-      // In production, we'd use wss:// and the real domain.
-      // For local development, we connect to the backend running on port 8000.
       const url = `ws://localhost:8000/api/v1/ws/events`;
       
       ws.current = new WebSocket(url);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
         if (reconnectTimeout.current) {
           clearTimeout(reconnectTimeout.current);
           reconnectTimeout.current = null;
@@ -26,24 +23,19 @@ export function useWebSocketSync() {
         try {
           const data = JSON.parse(event.data);
           if (data.event === 'DEFECT_CREATED' || data.event === 'DEFECT_UPDATED') {
-            console.log('Syncing data from websocket:', data);
             queryClient.invalidateQueries({ queryKey: ['defects'] });
             queryClient.invalidateQueries({ queryKey: ['map-defects'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
             queryClient.invalidateQueries({ queryKey: ['analytics-trends'] });
           }
-        } catch (error) {
-          console.error('Error parsing WebSocket message', error);
-        }
+        } catch {}
       };
 
       ws.current.onclose = () => {
-        console.log('WebSocket disconnected, attempting to reconnect...');
         reconnectTimeout.current = window.setTimeout(connect, 3000);
       };
       
-      ws.current.onerror = (error) => {
-        console.error('WebSocket error', error);
+      ws.current.onerror = () => {
         ws.current?.close();
       };
     }
@@ -55,7 +47,7 @@ export function useWebSocketSync() {
         clearTimeout(reconnectTimeout.current);
       }
       if (ws.current) {
-        ws.current.onclose = null; // Prevent reconnect on intentional unmount
+        ws.current.onclose = null;
         ws.current.close();
       }
     };

@@ -10,8 +10,10 @@ import { DefectsTableSkeleton } from './DefectsTableSkeleton'
 import { exportToCSV } from '../utils/exportToCSV'
 import { ReportExportDialog } from '@/features/reporting'
 import '../defects.css'
+import { useAuth } from '@/features/auth/useAuth'
 
 export function DefectsRegistry() {
+  const { user } = useAuth()
   const { data: defects = [], isLoading, error, refetch } = useDefects()
   const [selectedDefect, setSelectedDefect] = useState<DefectMarker | null>(null)
   const [query, setQuery] = useState('')
@@ -39,8 +41,8 @@ export function DefectsRegistry() {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <input id="defects-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по ID или адресу" className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" />
           </label>
-          <ReportExportDialog defects={filteredDefects} triggerClassName="w-full xl:w-auto" />
-          <Button className="defects-primary-button w-full xl:w-auto" onClick={() => exportToCSV(filteredDefects)} disabled={filteredDefects.length === 0 || isLoading}><Download data-icon="inline-start" aria-hidden="true" />Скачать CSV</Button>
+          {user?.role === 'admin' && <ReportExportDialog defects={filteredDefects} triggerClassName="w-full xl:w-auto" />}
+          {user?.role === 'admin' && <Button className="defects-primary-button w-full xl:w-auto" onClick={() => exportToCSV(filteredDefects)} disabled={filteredDefects.length === 0 || isLoading}><Download data-icon="inline-start" aria-hidden="true" />Скачать CSV</Button>}
         </div>
       </div>
 

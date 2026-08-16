@@ -13,7 +13,7 @@ class DefectBase(BaseModel):
     image_url: str
 
 class DefectCreate(DefectBase):
-    pass
+    owner_id: int | None = None
 
 class DefectUpdate(BaseModel):
     type: DefectType | None = None
@@ -26,6 +26,7 @@ class DefectUpdate(BaseModel):
 
 class DefectRead(DefectBase):
     id: int
+    owner_id: int | None
     created_at: datetime
     updated_at: datetime
     

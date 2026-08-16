@@ -14,7 +14,8 @@ class DefectRepository:
             longitude=obj_in.longitude,
             address=obj_in.address,
             confidence=obj_in.confidence,
-            image_url=obj_in.image_url
+            image_url=obj_in.image_url,
+            owner_id=obj_in.owner_id
         )
         db.add(db_obj)
         db.commit()
@@ -24,6 +25,10 @@ class DefectRepository:
     def get_by_id(self, db: Session, id: int) -> Defect | None:
         stmt = select(Defect).where(Defect.id == id)
         return db.execute(stmt).scalars().first()
+
+    def get_by_owner(self, db: Session, owner_id: int) -> list[Defect]:
+        stmt = select(Defect).where(Defect.owner_id == owner_id).order_by(Defect.id.desc())
+        return list(db.execute(stmt).scalars().all())
 
     def get_multi(
         self, 

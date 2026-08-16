@@ -6,8 +6,9 @@ from app.core.db import Base
 from app.models.base import TimestampMixin
 
 class UserRole(str, enum.Enum):
-    inspector = "inspector"
-    dispatcher = "dispatcher"
+    admin = "admin"
+    road_service = "road_service"
+    resident = "resident"
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -15,5 +16,5 @@ class User(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.inspector, nullable=False)
+    role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole), default=UserRole.resident, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

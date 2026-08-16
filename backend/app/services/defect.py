@@ -29,11 +29,11 @@ class DefectService:
         filename: str, 
         latitude: float, 
         longitude: float, 
-        address: str | None
+        address: str | None,
+        owner_id: int
     ) -> Defect:
         image_url = self.save_image(file_content, filename)
         
-        # Mock AI logic
         defect_type = random.choice([DefectType.POTHOLE, DefectType.CRACK, DefectType.NET])
         severity = random.choice([DefectSeverity.LOW, DefectSeverity.MEDIUM, DefectSeverity.HIGH, DefectSeverity.CRITICAL])
         confidence = round(random.uniform(0.65, 0.98), 2)
@@ -46,6 +46,7 @@ class DefectService:
             longitude=longitude,
             address=address,
             confidence=confidence,
-            image_url=image_url
+            image_url=image_url,
+            owner_id=owner_id
         )
         return self.repository.create(db, defect_in)

@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import String, Float, BigInteger, Enum
+from sqlalchemy import String, Float, BigInteger, Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import Base
 from app.models.base import TimestampMixin
@@ -33,3 +33,4 @@ class Defect(Base, TimestampMixin):
     address: Mapped[str | None] = mapped_column(String(255))
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     image_url: Mapped[str] = mapped_column(String(512))
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)

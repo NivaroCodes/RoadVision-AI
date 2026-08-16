@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -12,23 +12,24 @@ router = APIRouter()
 
 auth_service = AuthService(UserRepository())
 
-@router.post("/register", response_model=UserRead)
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user."""
     return auth_service.register_user(db, user_in)
 
 @router.post("/login", response_model=Token)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Login to get access and refresh tokens."""
     user = auth_service.authenticate(db, login_data)
     return auth_service.create_token(user)
 
 @router.post("/refresh", response_model=Token)
 def refresh(refresh_data: RefreshRequest, db: Session = Depends(get_db)):
-    """Refresh access token."""
     return auth_service.refresh_token(db, refresh_data.refresh_token)
 
 @router.get("/me", response_model=UserRead)
 def read_current_user(current_user: User = Depends(get_current_user)):
-    """Get current logged in user."""
     return current_user
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(current_user: User = Depends(get_current_user)) -> Response:
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

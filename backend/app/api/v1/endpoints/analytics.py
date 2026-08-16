@@ -5,6 +5,8 @@ from app.core.db import get_db
 from app.repositories.defect import DefectRepository
 from app.services.defect import DefectService
 from app.schemas.analytics import TrendPoint
+from app.auth.dependencies import require_admin
+from app.models.user import User
 
 router = APIRouter()
 
@@ -22,7 +24,8 @@ from sqlalchemy.exc import SQLAlchemyError
 def get_analytics_summary(
     start_date: datetime | None = Query(None, description="Filter by start date"),
     end_date: datetime | None = Query(None, description="Filter by end date"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
     try:
         return defect_repo.get_analytics_summary(db, start_date=start_date, end_date=end_date)
@@ -38,7 +41,8 @@ def get_analytics_summary(
 def get_analytics_trends(
     start_date: datetime | None = Query(None, description="Filter by start date"),
     end_date: datetime | None = Query(None, description="Filter by end date"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
     try:
         return defect_repo.get_daily_statistics(db, days=7, start_date=start_date, end_date=end_date)
