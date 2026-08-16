@@ -105,8 +105,11 @@ def analyze_processed_dataset(processed_dir: str):
     
     total_objects = sum(class_distribution.values())
     
-    is_ready = len(critical_issues) == 0 and images_count > 0 and total_objects > 0
-    status = "READY FOR TRAINING" if is_ready else "NOT READY FOR TRAINING"
+    is_ready = len(critical_issues) == 0 and images_count > 100 and total_objects > 0
+    if images_count <= 100:
+        status = "PIPELINE VALIDATED — REAL DATASET AUDIT REQUIRED"
+    else:
+        status = "READY FOR TRAINING" if is_ready else "NOT READY FOR TRAINING"
     
     with open(report_path, "w", encoding="utf-8") as rf:
         rf.write("# Dataset Audit Report (RDD2022)\n\n")
