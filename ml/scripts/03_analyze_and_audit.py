@@ -74,7 +74,11 @@ def analyze_processed_dataset(processed_dir: str):
                     warnings.append(f"Empty label file for {img_name}")
                     
                 for line in lines:
-                    parts = line.strip().split()
+                    line_str = line.strip()
+                    if not line_str:
+                        continue
+                        
+                    parts = line_str.split()
                     if len(parts) != 5:
                         invalid_labels += 1
                         critical_issues.append(f"Invalid label format in {lbl_path}")
