@@ -1,0 +1,15 @@
+# RDD2022 YOLO11s Dataset Configuration
+
+# Path must be absolute or relative to the directory where training is executed
+path: ./processed # dataset root dir
+train: train/images # train images (relative to 'path')
+val: val/images # val images (relative to 'path')
+test: test/images # test images (optional)
+
+# Classes
+nc: 4 # number of classes
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40

@@ -1,0 +1,10 @@
+path: ../data/training
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40
