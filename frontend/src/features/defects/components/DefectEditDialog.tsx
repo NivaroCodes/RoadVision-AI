@@ -20,6 +20,7 @@ import type { DefectMarker, DefectSeverity, DefectStatus } from '@/features/map/
 import { defectSeverityLabels, defectStatusLabels, defectTypeLabels } from '../labels'
 import { useUpdateDefect } from '../hooks/useUpdateDefect'
 import { Loader2 } from 'lucide-react'
+import { useAuth } from '@/features/auth/useAuth'
 
 interface DefectEditDialogProps {
   defect: DefectMarker | null
@@ -27,7 +28,17 @@ interface DefectEditDialogProps {
   onSave: () => void
 }
 
+const statusTransitions: Record<DefectStatus, DefectStatus[]> = {
+  submitted: ['detected', 'rejected'],
+  detected: ['in_progress', 'rejected'],
+  in_progress: ['fixed'],
+  fixed: ['verified', 'in_progress'],
+  verified: [],
+  rejected: [],
+}
+
 export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDialogProps) {
+  const { user } = useAuth()
   const [status, setStatus] = useState<DefectStatus>('detected')
   const [severity, setSeverity] = useState<DefectSeverity | null>(null)
 
@@ -39,11 +50,18 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
   }, [defect])
 
   const updateMutation = useUpdateDefect()
+  const availableStatuses = [
+    status,
+    ...statusTransitions[status].filter((value) => value !== 'verified' || user?.role === 'admin'),
+  ]
 
   const handleSave = () => {
     if (!defect) return
+    const data = user?.role === 'admin' && severity
+      ? { status, severity }
+      : { status }
     updateMutation.mutate(
-      { id: defect.id, data: { status, ...(severity ? { severity } : {}) } },
+      { id: defect.id, data },
       { onSuccess: () => onSave() }
     )
   }
@@ -71,16 +89,16 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
                 <SelectValue>{defectStatusLabels[status]}</SelectValue>
               </SelectTrigger>
               <SelectContent className="defects-select-content">
-                {Object.entries(defectStatusLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                {availableStatuses.map((value) => (
+                  <SelectItem key={value} value={value}>{defectStatusLabels[value]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </label>
 
-          <label className="grid gap-2" htmlFor="defect-severity">
+          {user?.role === 'admin' ? <label className="grid gap-2" htmlFor="defect-severity">
             <span className="text-sm font-medium text-neutral-200">Критичность</span>
-            <Select value={severity ?? undefined} onValueChange={(value) => setSeverity(value as DefectSeverity)}>
+            <Select value={severity ?? ''} onValueChange={(value) => setSeverity(value as DefectSeverity)}>
               <SelectTrigger id="defect-severity" className="h-11 w-full border-neutral-700 bg-neutral-950 text-neutral-100 hover:bg-neutral-900">
                 <SelectValue>{severity ? defectSeverityLabels[severity] : 'Ожидает анализа'}</SelectValue>
               </SelectTrigger>
@@ -90,7 +108,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
                 ))}
               </SelectContent>
             </Select>
-          </label>
+          </label> : null}
         </div>
 
         <DialogFooter>

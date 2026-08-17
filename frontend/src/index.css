@@ -1,5 +1,3 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @tailwind base;
 @tailwind components;
@@ -26,6 +24,7 @@
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0 0);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
@@ -60,6 +59,7 @@
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
@@ -95,9 +95,9 @@
 @layer components {
   .leaflet-popup-content-wrapper,
   .leaflet-popup-tip {
-    background: hsl(var(--card)) !important;
-    color: hsl(var(--card-foreground)) !important;
-    border: 1px solid hsl(var(--border)) !important;
+    background: var(--card) !important;
+    color: var(--card-foreground) !important;
+    border: 1px solid var(--border) !important;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
   }
   .leaflet-popup-content {
@@ -105,19 +105,18 @@
     width: max-content !important;
   }
   .leaflet-container a.leaflet-popup-close-button {
-    color: hsl(var(--muted-foreground)) !important;
+    color: var(--muted-foreground) !important;
     padding: 8px !important;
     font-size: 18px !important;
   }
   .leaflet-container a.leaflet-popup-close-button:hover {
-    color: hsl(var(--foreground)) !important;
+    color: var(--foreground) !important;
     background: transparent !important;
   }
   .leaflet-control-attribution {
     display: none !important;
   }
 
-  /* Скрытие системной рамки фокуса для Recharts */
   .recharts-wrapper,
   .recharts-surface {
     outline: none !important;

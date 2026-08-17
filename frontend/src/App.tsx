@@ -1,16 +1,18 @@
 import { Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import Layout from './components/layout/Layout';
-import DashboardPage from './pages/DashboardPage';
-import MapPage from './pages/MapPage';
-import DefectsPage from './pages/DefectsPage';
-import UploadPage from './pages/UploadPage';
-import NotFoundPage from './pages/NotFoundPage';
-import AuthPage from './pages/AuthPage';
-import AccessDeniedPage from './pages/AccessDeniedPage';
-import MyDefectsPage from './pages/MyDefectsPage';
-import UsersPage from './pages/UsersPage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { useAuth } from './features/auth/useAuth';
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const DefectsPage = lazy(() => import('./pages/DefectsPage'));
+const UploadPage = lazy(() => import('./pages/UploadPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const AccessDeniedPage = lazy(() => import('./pages/AccessDeniedPage'));
+const MyDefectsPage = lazy(() => import('./pages/MyDefectsPage'));
+const UsersPage = lazy(() => import('./pages/UsersPage'));
 
 function HomeRoute() {
   const { user } = useAuth();
@@ -39,5 +41,5 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-background text-muted-foreground">Загрузка…</div>}><RouterProvider router={router} /></Suspense>;
 }
