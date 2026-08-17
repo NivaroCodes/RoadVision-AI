@@ -47,8 +47,13 @@ export function useWebSocketSync() {
         clearTimeout(reconnectTimeout.current);
       }
       if (ws.current) {
-        ws.current.onclose = null;
-        ws.current.close();
+        const socket = ws.current;
+        socket.onclose = null;
+        if (socket.readyState === 0) { // CONNECTING
+          socket.onopen = () => socket.close();
+        } else {
+          socket.close();
+        }
       }
     };
   }, [queryClient]);

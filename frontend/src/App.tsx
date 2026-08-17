@@ -16,7 +16,7 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 
 function HomeRoute() {
   const { user } = useAuth();
-  if (user?.role === 'admin') return <DashboardPage />;
+  if (user?.role === 'admin') return <Navigate to="/dashboard" replace />;
   if (user?.role === 'road_service') return <Navigate to="/map" replace />;
   return <Navigate to="/upload" replace />;
 }
@@ -29,6 +29,7 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><Layout /></ProtectedRoute>,
     children: [
       { index: true, element: <HomeRoute /> },
+      { path: 'dashboard', element: <ProtectedRoute roles={['admin']}><DashboardPage /></ProtectedRoute> },
       { path: 'map', element: <ProtectedRoute roles={['admin', 'road_service']}><MapPage /></ProtectedRoute> },
       { path: 'defects', element: <ProtectedRoute roles={['admin', 'road_service']}><DefectsPage /></ProtectedRoute> },
       { path: 'upload', element: <ProtectedRoute roles={['admin', 'resident']}><UploadPage /></ProtectedRoute> },

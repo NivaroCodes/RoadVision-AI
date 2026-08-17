@@ -11,7 +11,7 @@ export default function NotFoundPage() {
         <p className="bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-8xl font-black tracking-tighter text-transparent sm:text-9xl">404</p>
         <h1 className="mt-5 text-2xl font-bold sm:text-3xl">Страница не найдена</h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400 sm:text-base">Возможно, адрес изменился или такой страницы больше не существует.</p>
-        <Button render={<Link to="/" />} className="mt-8 min-h-11 px-5"><ArrowLeft data-icon="inline-start" aria-hidden="true" />Вернуться на главную</Button>
+        <Button render={<Link to="/" />} nativeButton={false} className="mt-8 min-h-11 px-5"><ArrowLeft data-icon="inline-start" aria-hidden="true" />Вернуться на главную</Button>
       </div>
     </main>
   )

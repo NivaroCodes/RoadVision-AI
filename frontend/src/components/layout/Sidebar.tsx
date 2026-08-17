@@ -10,7 +10,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const navigation: Array<{ name: string; href: string; icon: typeof Map; roles: UserRole[] }> = [
-  { name: 'Дашборд', href: '/', icon: LayoutDashboard, roles: ['admin'] },
+  { name: 'Дашборд', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { name: 'Карта', href: '/map', icon: Map, roles: ['admin', 'road_service'] },
   { name: 'Журнал дефектов', href: '/defects', icon: FileWarning, roles: ['admin', 'road_service'] },
   { name: 'Загрузка данных', href: '/upload', icon: Upload, roles: ['admin', 'resident'] },
