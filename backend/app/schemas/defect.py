@@ -81,6 +81,9 @@ class VerificationRead(BaseModel):
 
 
 class DefectEventRead(BaseModel):
+    id: int
+    defect_id: int
+    actor_id: int | None
     event_type: str
     details: dict[str, str | int | float | bool | None]
     created_at: datetime

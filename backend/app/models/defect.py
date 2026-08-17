@@ -50,6 +50,7 @@ class VerificationStatus(str, enum.Enum):
     PENDING = "pending"
     VERIFIED = "verified"
     NOT_VERIFIED = "not_verified"
+    FAILED = "failed"
     MANUAL_REVIEW = "manual_review"
 
 

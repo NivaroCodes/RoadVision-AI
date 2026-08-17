@@ -1,4 +1,3 @@
-import math
 import os
 import uuid
 from datetime import datetime, timezone
@@ -6,11 +5,13 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.defect import AnalysisStatus, Defect, DefectSeverity, DefectStatus, PriorityLevel, VerificationStatus
+from app.models.defect import AnalysisStatus, Defect, DefectStatus, VerificationStatus
 from app.models.user import User, UserRole
 from app.repositories.defect import DefectRepository
 from app.schemas.defect import AnalysisRequest, DefectCreate, DefectUpdate
 from app.services.ai import DetectionService, PendingDetectionService, PendingVerificationService, VerificationService
+from app.services.deduplication import DeduplicationPolicy
+from app.services.priority import PriorityEngine, RuleBasedPriorityEngine
 
 
 class DefectService:
@@ -28,10 +29,14 @@ class DefectService:
         repository: DefectRepository,
         detection_service: DetectionService | None = None,
         verification_service: VerificationService | None = None,
+        deduplication_policy: DeduplicationPolicy | None = None,
+        priority_engine: PriorityEngine | None = None,
     ) -> None:
         self.repository = repository
         self.detection_service = detection_service or PendingDetectionService()
         self.verification_service = verification_service or PendingVerificationService()
+        self.deduplication_policy = deduplication_policy or DeduplicationPolicy()
+        self.priority_engine = priority_engine or RuleBasedPriorityEngine()
         self.upload_dir = "uploads"
 
     def save_image(self, file_content: bytes, filename: str) -> str:
@@ -60,8 +65,9 @@ class DefectService:
             latitude,
             longitude,
             analysis.defect_type if analysis else None,
+            self.deduplication_policy.time_window_days,
         )
-        duplicate = next((candidate for candidate in candidates if self.distance_meters(latitude, longitude, candidate.latitude, candidate.longitude) <= 25), None)
+        duplicate = next((candidate for candidate in candidates if self.deduplication_policy.matches(latitude, longitude, analysis.defect_type if analysis else None, candidate)), None)
         if duplicate is not None:
             self.repository.add_report(db, duplicate.id, owner_id, image_url, latitude, longitude)
             duplicate.confirmation_count += 1
@@ -103,7 +109,10 @@ class DefectService:
         defect.severity = analysis.severity if analysis.detected else None
         defect.analysis_status = AnalysisStatus.COMPLETED
         target_status = DefectStatus.DETECTED if analysis.detected else DefectStatus.REJECTED
+        previous_status = defect.status
         self.transition(defect, target_status)
+        if previous_status != defect.status:
+            self.add_status_event(db, defect, actor_id, previous_status)
         self.apply_priority(defect)
         self.repository.add_event(db, defect.id, actor_id, "analysis_completed", {"detected": analysis.detected, "confidence": analysis.confidence})
         db.commit()
@@ -113,13 +122,19 @@ class DefectService:
     def update(self, db: Session, defect: Defect, update: DefectUpdate, actor: User) -> Defect:
         data = update.model_dump(exclude_unset=True)
         requested_status = data.pop("status", None)
-        if actor.role == UserRole.road_service and any(field in data for field in ("type", "severity", "confidence", "latitude", "longitude")):
+        if actor.role == UserRole.road_service and data:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service can only update workflow fields")
+        if actor.role == UserRole.road_service and defect.assigned_to_id != actor.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service can only update assigned defects")
         if requested_status is not None:
             if requested_status == DefectStatus.VERIFIED and actor.role != UserRole.admin:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only administrators can verify repairs")
+            if requested_status == DefectStatus.FIXED and defect.after_image_url is None:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An after image is required before a defect can be fixed")
+            previous_status = defect.status
             self.transition(defect, requested_status)
-            self.repository.add_event(db, defect.id, actor.id, requested_status.value)
+            if previous_status != defect.status:
+                self.add_status_event(db, defect, actor.id, previous_status)
         for field, value in data.items():
             setattr(defect, field, value)
         self.apply_priority(defect)
@@ -138,9 +153,12 @@ class DefectService:
         return defect
 
     def upload_after_image(self, db: Session, defect: Defect, content: bytes, filename: str, actor_id: int) -> Defect:
-        if defect.status != DefectStatus.FIXED:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="After image can only be uploaded for a fixed defect")
+        if defect.status != DefectStatus.IN_PROGRESS:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="After image can only be uploaded while repair is in progress")
         defect.after_image_url = self.save_image(content, filename)
+        previous_status = defect.status
+        self.transition(defect, DefectStatus.FIXED)
+        self.add_status_event(db, defect, actor_id, previous_status)
         result = self.verification_service.verify(defect.image_url, content)
         if result is None or result.confidence is None or result.confidence < 0.8:
             defect.verification_status = VerificationStatus.MANUAL_REVIEW
@@ -148,6 +166,11 @@ class DefectService:
             defect.verification_status = result.status
         defect.verification_confidence = result.confidence if result else None
         self.repository.add_event(db, defect.id, actor_id, "verification_requested", {"status": defect.verification_status.value})
+        if defect.verification_status == VerificationStatus.VERIFIED:
+            previous_status = defect.status
+            self.transition(defect, DefectStatus.VERIFIED)
+            self.add_status_event(db, defect, None, previous_status)
+        self.apply_priority(defect)
         db.commit()
         db.refresh(defect)
         return defect
@@ -160,36 +183,13 @@ class DefectService:
         defect.status = target
 
     def apply_priority(self, defect: Defect) -> None:
-        reasons: list[str] = []
-        level = PriorityLevel.LOW
-        severity_levels = {
-            DefectSeverity.LOW: PriorityLevel.LOW,
-            DefectSeverity.MEDIUM: PriorityLevel.MEDIUM,
-            DefectSeverity.HIGH: PriorityLevel.HIGH,
-            DefectSeverity.CRITICAL: PriorityLevel.CRITICAL,
-        }
-        if defect.severity is not None:
-            level = severity_levels[defect.severity]
-            reasons.append(f"Severity is {defect.severity.value}")
-        if defect.confirmation_count >= 10:
-            level = PriorityLevel.CRITICAL if level == PriorityLevel.HIGH else max(level, PriorityLevel.HIGH, key=self.priority_rank)
-            reasons.append(f"{defect.confirmation_count} resident confirmations")
-        elif defect.confirmation_count >= 3:
-            level = max(level, PriorityLevel.MEDIUM, key=self.priority_rank)
-            reasons.append(f"{defect.confirmation_count} resident confirmations")
-        if defect.status in (DefectStatus.FIXED, DefectStatus.VERIFIED, DefectStatus.REJECTED):
-            reasons.append(f"Lifecycle status is {defect.status.value}")
-        defect.priority = level
-        defect.priority_reasons = reasons or ["Awaiting AI assessment"]
+        defect.priority, defect.priority_reasons = self.priority_engine.evaluate(defect)
 
-    @staticmethod
-    def priority_rank(level: PriorityLevel) -> int:
-        return {PriorityLevel.LOW: 1, PriorityLevel.MEDIUM: 2, PriorityLevel.HIGH: 3, PriorityLevel.CRITICAL: 4}[level]
-
-    @staticmethod
-    def distance_meters(latitude_a: float, longitude_a: float, latitude_b: float, longitude_b: float) -> float:
-        radius = 6_371_000
-        latitude_delta = math.radians(latitude_b - latitude_a)
-        longitude_delta = math.radians(longitude_b - longitude_a)
-        value = math.sin(latitude_delta / 2) ** 2 + math.cos(math.radians(latitude_a)) * math.cos(math.radians(latitude_b)) * math.sin(longitude_delta / 2) ** 2
-        return 2 * radius * math.atan2(math.sqrt(value), math.sqrt(1 - value))
+    def add_status_event(self, db: Session, defect: Defect, actor_id: int | None, previous_status: DefectStatus) -> None:
+        self.repository.add_event(
+            db,
+            defect.id,
+            actor_id,
+            "status_changed",
+            {"from_status": previous_status.value, "to_status": defect.status.value},
+        )

@@ -150,7 +150,7 @@ async def upload_after_image(
 ) -> VerificationRead:
     content = await read_image(image)
     defect = get_defect_or_404(db, defect_id)
-    if current_user.role == UserRole.road_service and defect.assigned_to_id not in (None, current_user.id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Defect is assigned to another Road Service user")
+    if current_user.role == UserRole.road_service and defect.assigned_to_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service can only repair assigned defects")
     updated = service.upload_after_image(db, defect, content, image.filename or "after.jpg", current_user.id)
     return VerificationRead(defect_id=updated.id, status=updated.verification_status, confidence=updated.verification_confidence, after_image_url=updated.after_image_url or "")

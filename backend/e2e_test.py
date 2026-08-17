@@ -28,6 +28,11 @@ class LowConfidenceVerificationService:
         return VerificationResult(status=VerificationStatus.VERIFIED, confidence=0.42)
 
 
+class FailedVerificationService:
+    def verify(self, before_image_url: str, after_image: bytes) -> VerificationResult:
+        return VerificationResult(status=VerificationStatus.FAILED, confidence=0.93)
+
+
 def expect(actual: int, expected: int, step: str) -> None:
     if actual != expected:
         raise AssertionError(f"{step}: expected {expected}, received {actual}")
@@ -108,7 +113,7 @@ try:
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"severity": "critical"}).status_code, 403, "road severity update")
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"status": "fixed"}).status_code, 409, "invalid lifecycle jump")
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"status": "in_progress"}).status_code, 200, "repair started")
-    expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"status": "fixed"}).status_code, 200, "repair fixed")
+    expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"status": "fixed"}).status_code, 409, "fixed requires after image")
 
     defect_service.verification_service = LowConfidenceVerificationService()
     after = client.post(
@@ -122,7 +127,37 @@ try:
     image_paths.add(after.json()["after_image_url"].lstrip("/"))
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=road_headers, json={"status": "verified"}).status_code, 403, "road verification")
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=admin_headers, json={"status": "verified"}).status_code, 200, "admin verification")
-    expect(client.get(f"/api/v1/defects/{first['id']}/events", headers=resident_headers).status_code, 200, "resident status history")
+    events = client.get(f"/api/v1/defects/{first['id']}/events", headers=resident_headers)
+    expect(events.status_code, 200, "resident status history")
+    status_events = [event for event in events.json() if event["event_type"] == "status_changed"]
+    if not status_events or any("from_status" not in event["details"] or "to_status" not in event["details"] for event in status_events):
+        raise AssertionError("status history must expose previous and next states")
+
+    expect(
+        client.post(
+            f"/api/v1/defects/{separate['id']}/analysis",
+            headers=admin_headers,
+            json={"detected": True, "defect_type": "crack", "confidence": 0.88, "severity": "medium"},
+        ).status_code,
+        200,
+        "failed verification analysis",
+    )
+    expect(client.post(f"/api/v1/defects/{separate['id']}/assign", headers=admin_headers, json={"road_service_user_id": road_user_id}).status_code, 200, "failed verification assignment")
+    expect(client.patch(f"/api/v1/defects/{separate['id']}", headers=road_headers, json={"status": "in_progress"}).status_code, 200, "failed verification repair start")
+    defect_service.verification_service = FailedVerificationService()
+    failed_after = client.post(
+        f"/api/v1/defects/{separate['id']}/after-image",
+        headers=road_headers,
+        files={"image": ("failed-after.jpg", io.BytesIO(b"failed-after-image"), "image/jpeg")},
+    )
+    expect(failed_after.status_code, 200, "failed AI verification")
+    if failed_after.json()["status"] != "failed":
+        raise AssertionError("high-confidence failed verification must be preserved")
+    image_paths.add(failed_after.json()["after_image_url"].lstrip("/"))
+    failed_defect = client.get(f"/api/v1/defects/{separate['id']}", headers=resident_headers)
+    expect(failed_defect.status_code, 200, "failed verification defect")
+    if failed_defect.json()["status"] != "fixed":
+        raise AssertionError("failed AI verification must not verify the lifecycle")
     expect(client.get("/api/v1/analytics/summary", headers=admin_headers).status_code, 200, "admin analytics")
     expect(client.get("/api/v1/users/", headers=road_headers).status_code, 403, "road admin access")
 finally:
