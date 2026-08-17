@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { AxiosError } from 'axios';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Map, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Map, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/features/auth/useAuth';
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
@@ -10,6 +10,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -55,7 +56,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="h-11 w-full rounded-lg border bg-background px-3" placeholder="name@example.com" />
           </label>
           <label className="block space-y-2 text-sm font-medium">Пароль
-            <input type="password" required minLength={8} maxLength={128} autoComplete={isLogin ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 w-full rounded-lg border bg-background px-3" placeholder="Не менее 8 символов" />
+            <div className="relative">
+              <input type={showPassword ? 'text' : 'password'} required minLength={8} maxLength={128} autoComplete={isLogin ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} className="h-11 w-full rounded-lg border bg-background pl-3 pr-10" placeholder="Не менее 8 символов" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}>
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </label>
           {error && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
           <button disabled={submitting} className="h-11 w-full rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-60">{submitting ? 'Подождите…' : isLogin ? 'Войти' : 'Зарегистрироваться'}</button>
