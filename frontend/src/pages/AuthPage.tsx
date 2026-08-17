@@ -4,6 +4,21 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Map, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/features/auth/useAuth';
 
+function getApiErrorMessage(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object') return undefined;
+  const detail = (data as { detail?: unknown }).detail;
+  if (typeof detail === 'string') return detail;
+  if (!Array.isArray(detail)) return undefined;
+  const messages = detail
+    .map((item) => {
+      if (!item || typeof item !== 'object') return undefined;
+      const message = (item as { msg?: unknown }).msg;
+      return typeof message === 'string' ? message : undefined;
+    })
+    .filter((message): message is string => Boolean(message));
+  return messages.length > 0 ? messages.join(' ') : undefined;
+}
+
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
@@ -26,7 +41,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       navigate(destination, { replace: true });
     } catch (requestError) {
       const message = requestError instanceof AxiosError
-        ? (requestError.response?.data as { detail?: string } | undefined)?.detail
+        ? getApiErrorMessage(requestError.response?.data)
         : undefined;
       setError(message ?? 'Не удалось выполнить запрос. Проверьте данные и соединение.');
     } finally {

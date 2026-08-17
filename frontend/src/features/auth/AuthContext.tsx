@@ -45,9 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [login]);
 
   const logout = useCallback(() => {
-    void apiClient.post('/auth/logout').catch(() => undefined);
+    const accessToken = getAccessToken();
     clearTokens();
     setUser(null);
+    if (accessToken) {
+      void apiClient.post('/auth/logout', undefined, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }).catch(() => undefined);
+    }
   }, []);
 
   const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);
