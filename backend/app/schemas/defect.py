@@ -55,9 +55,11 @@ class DefectMapRead(BaseModel):
     severity: DefectSeverity | None
     latitude: float
     longitude: float
+    address: str | None
     confidence: float | None
     priority: PriorityLevel
     confirmation_count: int
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
