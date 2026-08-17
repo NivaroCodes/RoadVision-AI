@@ -79,7 +79,7 @@ export function DateRangeFilter({
 
   const setPreset = (days: number) => {
     const toDate = new Date();
-    const fromDate = subDays(toDate, days);
+    const fromDate = subDays(toDate, days - 1);
     updateUrl({ from: fromDate, to: toDate });
     setIsOpen(false);
   };

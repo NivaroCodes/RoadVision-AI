@@ -12,6 +12,8 @@ export interface DefectMarker {
   confidence: number | null;
   address?: string;
   created_at?: string;
+  priority: number;
+  confirmation_count: number;
 }
 
 export interface MapFilterValues {
