@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
-from sqlalchemy import Date, case, cast, func, select
+from sqlalchemy import Date, case, cast, exists, func, select
 from sqlalchemy.orm import Session
 
 from app.models.defect import Defect, DefectEvent, DefectReport, DefectSeverity, DefectStatus, DefectType
@@ -20,12 +20,26 @@ class DefectRepository:
     def get_by_owner(self, db: Session, owner_id: int) -> list[Defect]:
         statement = (
             select(Defect)
-            .join(DefectReport, DefectReport.defect_id == Defect.id)
-            .where(DefectReport.resident_id == owner_id)
-            .distinct()
+            .where(
+                exists().where(
+                    DefectReport.defect_id == Defect.id,
+                    DefectReport.resident_id == owner_id,
+                )
+            )
             .order_by(Defect.id.desc())
         )
         return list(db.execute(statement).scalars().all())
+
+    @staticmethod
+    def _apply_created_at_range(statement, start_date: datetime | None, end_date: datetime | None):
+        if start_date is not None:
+            statement = statement.where(Defect.created_at >= start_date)
+        if end_date is not None:
+            if end_date.time() == time.min:
+                statement = statement.where(Defect.created_at < end_date + timedelta(days=1))
+            else:
+                statement = statement.where(Defect.created_at <= end_date)
+        return statement
 
     def resident_has_report(self, db: Session, defect_id: int, resident_id: int) -> bool:
         statement = select(DefectReport.id).where(
@@ -82,10 +96,7 @@ class DefectRepository:
             statement = statement.where(Defect.status == status)
         if severity is not None:
             statement = statement.where(Defect.severity == severity)
-        if start_date is not None:
-            statement = statement.where(Defect.created_at >= start_date)
-        if end_date is not None:
-            statement = statement.where(Defect.created_at <= end_date)
+        statement = self._apply_created_at_range(statement, start_date, end_date)
         statement = statement.order_by(Defect.id.desc()).offset(skip).limit(limit)
         return list(db.execute(statement).scalars().all())
 
@@ -118,10 +129,7 @@ class DefectRepository:
         }
         result: dict[str, int] = {}
         for name, statement in statements.items():
-            if start_date is not None:
-                statement = statement.where(Defect.created_at >= start_date)
-            if end_date is not None:
-                statement = statement.where(Defect.created_at <= end_date)
+            statement = self._apply_created_at_range(statement, start_date, end_date)
             result[name] = db.execute(statement).scalar() or 0
         return result
 

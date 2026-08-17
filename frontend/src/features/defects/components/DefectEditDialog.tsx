@@ -1,106 +1,63 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Clock3, Loader2, Upload } from 'lucide-react'
+import { apiClient } from '@/api/client'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import type { DefectMarker, DefectSeverity, DefectStatus } from '@/features/map/types'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { AuthUser } from '@/features/auth/types'
+import { useAuth } from '@/features/auth/useAuth'
+import type { DefectMarker, DefectSeverity, DefectStatus, DefectType } from '@/features/map/types'
+import { analyzeDefect, assignDefect, getDefect, getDefectEvents, uploadAfterImage, type AnalysisPayload } from '../api'
 import { defectSeverityLabels, defectStatusLabels, defectTypeLabels } from '../labels'
 import { useUpdateDefect } from '../hooks/useUpdateDefect'
-import { Loader2 } from 'lucide-react'
 
-interface DefectEditDialogProps {
-  defect: DefectMarker | null
-  onOpenChange: (open: boolean) => void
-  onSave: () => void
-}
+interface DefectEditDialogProps { defect: DefectMarker | null; onOpenChange: (open: boolean) => void; onSave: () => void }
+const statusTransitions: Record<DefectStatus, DefectStatus[]> = { submitted: ['rejected'], detected: ['in_progress', 'rejected'], in_progress: [], fixed: ['verified', 'in_progress'], verified: [], rejected: [] }
+const priorityLabels = { low: 'Низкий', medium: 'Средний', high: 'Высокий', critical: 'Критический' }
+const analysisLabels = { pending: 'Ожидается', completed: 'Завершён', failed: 'Ошибка' }
+const verificationLabels = { pending: 'Ожидается', verified: 'Подтверждено', not_verified: 'Не подтверждено', failed: 'Ошибка проверки', manual_review: 'Нужна ручная проверка' }
+const eventLabels: Record<string, string> = { submitted: 'Обращение создано', detected: 'Дефект обнаружен', report_confirmed: 'Обращение подтверждено другим жителем', analysis_completed: 'Анализ завершён', assigned: 'Назначена дорожная служба', status_changed: 'Статус изменён', verification_requested: 'Запущена проверка ремонта' }
+function invalidateDefectData(queryClient: ReturnType<typeof useQueryClient>, id: number) { for (const queryKey of [['defect', id], ['defect-events', id], ['defects'], ['map-defects'], ['my-defects'], ['dashboard-summary'], ['analytics-trends']] as const) queryClient.invalidateQueries({ queryKey: [...queryKey] }) }
 
 export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDialogProps) {
-  const [status, setStatus] = useState<DefectStatus>('detected')
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const defectId = defect?.id ?? 0
+  const detailQuery = useQuery({ queryKey: ['defect', defectId], queryFn: () => getDefect(defectId), enabled: defectId > 0 })
+  const eventsQuery = useQuery({ queryKey: ['defect-events', defectId], queryFn: () => getDefectEvents(defectId), enabled: defectId > 0 })
+  const usersQuery = useQuery({ queryKey: ['users'], queryFn: async () => (await apiClient.get<AuthUser[]>('/users/')).data, enabled: defectId > 0 && user?.role === 'admin' })
+  const current = detailQuery.data ?? defect
+  const [status, setStatus] = useState<DefectStatus>('submitted')
   const [severity, setSeverity] = useState<DefectSeverity | null>(null)
+  const [detected, setDetected] = useState(true)
+  const [analysisType, setAnalysisType] = useState<DefectType>('pothole')
+  const [analysisSeverity, setAnalysisSeverity] = useState<DefectSeverity>('medium')
+  const [confidence, setConfidence] = useState(80)
+  const [assigneeId, setAssigneeId] = useState('')
+  const [afterImage, setAfterImage] = useState<File | null>(null)
 
-  useEffect(() => {
-    if (defect) {
-      setStatus(defect.status)
-      setSeverity(defect.severity)
-    }
-  }, [defect])
-
+  useEffect(() => { if (current) { setStatus(current.status); setSeverity(current.severity); setAnalysisType(current.type ?? 'pothole'); setAnalysisSeverity(current.severity ?? 'medium'); setConfidence(Math.round((current.confidence ?? 0.8) * 100)); setAssigneeId(current.assigned_to_id ? String(current.assigned_to_id) : '') } }, [current])
+  const roadUsers = useMemo(() => usersQuery.data?.filter((item) => item.role === 'road_service' && item.is_active) ?? [], [usersQuery.data])
   const updateMutation = useUpdateDefect()
+  const analysisMutation = useMutation({ mutationFn: (payload: AnalysisPayload) => analyzeDefect(defectId, payload), onSuccess: () => invalidateDefectData(queryClient, defectId) })
+  const assignmentMutation = useMutation({ mutationFn: (roadServiceUserId: number) => assignDefect(defectId, roadServiceUserId), onSuccess: () => invalidateDefectData(queryClient, defectId) })
+  const afterImageMutation = useMutation({ mutationFn: (image: File) => uploadAfterImage(defectId, image), onSuccess: () => { setAfterImage(null); invalidateDefectData(queryClient, defectId) } })
+  if (!current) return null
+  const availableStatuses = [status, ...statusTransitions[status].filter((value) => value !== 'verified' || user?.role === 'admin')]
+  const canSelfAssign = user?.role === 'road_service' && current.assigned_to_id !== user.id
+  const canUploadAfterImage = current.status === 'in_progress' && (user?.role === 'admin' || current.assigned_to_id === user?.id)
+  const hasMutationError = updateMutation.isError || analysisMutation.isError || assignmentMutation.isError || afterImageMutation.isError
+  const handleSave = () => { const data = user?.role === 'admin' && severity ? { status, severity } : { status }; updateMutation.mutate({ id: current.id, data }, { onSuccess: () => { invalidateDefectData(queryClient, current.id); onSave() } }) }
+  const handleAnalysis = () => analysisMutation.mutate({ detected, defect_type: detected ? analysisType : null, confidence: Math.max(0, Math.min(100, confidence)) / 100, severity: detected ? analysisSeverity : null })
 
-  const handleSave = () => {
-    if (!defect) return
-    updateMutation.mutate(
-      { id: defect.id, data: { status, ...(severity ? { severity } : {}) } },
-      { onSuccess: () => onSave() }
-    )
-  }
-
-  return (
-    <Dialog open={defect !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Редактирование дефекта #{defect?.id}</DialogTitle>
-          <DialogDescription>
-            {defect ? `${defect.type ? defectTypeLabels[defect.type] : 'Ожидает анализа'} · ${defect.address ?? 'Шымкент'}` : ''}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-5 py-2">
-          {updateMutation.isError && (
-            <div className="rounded-md border border-red-900 bg-red-950/60 p-3 text-sm font-medium text-red-200" role="alert">
-              Ошибка сохранения. Попробуйте еще раз.
-            </div>
-          )}
-          <label className="grid gap-2" htmlFor="defect-status">
-            <span className="text-sm font-medium text-neutral-200">Статус</span>
-            <Select value={status} onValueChange={(value) => setStatus(value as DefectStatus)}>
-              <SelectTrigger id="defect-status" className="h-11 w-full border-neutral-700 bg-neutral-950 text-neutral-100 hover:bg-neutral-900">
-                <SelectValue>{defectStatusLabels[status]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className="defects-select-content">
-                {Object.entries(defectStatusLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="grid gap-2" htmlFor="defect-severity">
-            <span className="text-sm font-medium text-neutral-200">Критичность</span>
-            <Select value={severity ?? undefined} onValueChange={(value) => setSeverity(value as DefectSeverity)}>
-              <SelectTrigger id="defect-severity" className="h-11 w-full border-neutral-700 bg-neutral-950 text-neutral-100 hover:bg-neutral-900">
-                <SelectValue>{severity ? defectSeverityLabels[severity] : 'Ожидает анализа'}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className="defects-select-content">
-                {Object.entries(defectSeverityLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-        </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" className="w-full border-neutral-700 bg-transparent text-neutral-100 hover:bg-neutral-800 hover:text-white sm:w-auto" disabled={updateMutation.isPending} />}>Отмена</DialogClose>
-          <Button className="w-full bg-white text-black hover:bg-neutral-200 sm:w-auto" onClick={handleSave} disabled={updateMutation.isPending}>
-            {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Сохранить изменения
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return <Dialog open={defect !== null} onOpenChange={onOpenChange}><DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Управление дефектом #{current.id}</DialogTitle><DialogDescription>{`${current.type ? defectTypeLabels[current.type] : 'Ожидает анализа'} · ${current.address ?? 'Адрес не указан'}`}</DialogDescription></DialogHeader><div className="grid gap-5 py-2">
+    {hasMutationError && <div className="rounded-md border border-red-900 bg-red-950/60 p-3 text-sm font-medium text-red-200" role="alert">Операция не выполнена. Проверьте текущий статус и права пользователя, затем повторите.</div>}
+    <section className="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2" aria-label="Сводка дефекта"><p><span className="text-sm text-muted-foreground">Приоритет</span><strong className="block">{priorityLabels[current.priority]}</strong></p><p><span className="text-sm text-muted-foreground">Подтверждений жителей</span><strong className="block">{current.confirmation_count}</strong></p><p><span className="text-sm text-muted-foreground">Анализ</span><strong className="block">{current.analysis_status ? analysisLabels[current.analysis_status] : '—'}</strong></p><p><span className="text-sm text-muted-foreground">Проверка ремонта</span><strong className="block">{current.verification_status ? verificationLabels[current.verification_status] : '—'}</strong></p><p><span className="text-sm text-muted-foreground">Исполнитель</span><strong className="block">{current.assigned_to_id ? `Пользователь #${current.assigned_to_id}` : 'Не назначен'}</strong></p><p><span className="text-sm text-muted-foreground">Уверенность проверки</span><strong className="block">{current.verification_confidence == null ? '—' : `${Math.round(current.verification_confidence * 100)}%`}</strong></p></section>
+    {user?.role === 'admin' && current.status === 'submitted' && <section className="grid gap-3 rounded-xl border p-4" aria-labelledby="analysis-title"><h3 id="analysis-title" className="font-semibold">Ручной анализ</h3><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={detected} onChange={(event) => setDetected(event.target.checked)} />Дефект подтверждён</label>{detected && <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm">Тип<select value={analysisType} onChange={(event) => setAnalysisType(event.target.value as DefectType)} className="h-10 rounded-lg border bg-background px-3">{Object.entries(defectTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label className="grid gap-1 text-sm">Критичность<select value={analysisSeverity} onChange={(event) => setAnalysisSeverity(event.target.value as DefectSeverity)} className="h-10 rounded-lg border bg-background px-3">{Object.entries(defectSeverityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>}<label className="grid gap-1 text-sm">Уверенность, %<input type="number" min="0" max="100" value={confidence} onChange={(event) => setConfidence(Number(event.target.value))} className="h-10 rounded-lg border bg-background px-3" /></label><Button type="button" onClick={handleAnalysis} disabled={analysisMutation.isPending}>{analysisMutation.isPending && <Loader2 className="animate-spin" />}Сохранить анализ</Button></section>}
+    {(current.status === 'detected' || current.status === 'in_progress') && <section className="grid gap-3 rounded-xl border p-4" aria-labelledby="assignment-title"><h3 id="assignment-title" className="font-semibold">Исполнитель ремонта</h3>{user?.role === 'admin' ? <><select value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)} className="h-10 rounded-lg border bg-background px-3" aria-label="Дорожная служба"><option value="">Выберите сотрудника</option>{roadUsers.map((roadUser) => <option key={roadUser.id} value={roadUser.id}>{roadUser.email}</option>)}</select><Button type="button" variant="outline" disabled={!assigneeId || assignmentMutation.isPending} onClick={() => assignmentMutation.mutate(Number(assigneeId))}>Назначить исполнителя</Button></> : canSelfAssign ? <Button type="button" variant="outline" disabled={assignmentMutation.isPending} onClick={() => assignmentMutation.mutate(user.id)}>Назначить себе</Button> : <p className="text-sm text-muted-foreground">Дефект уже назначен вам.</p>}</section>}
+    {canUploadAfterImage && <section className="grid gap-3 rounded-xl border p-4" aria-labelledby="repair-title"><h3 id="repair-title" className="font-semibold">Завершение ремонта</h3><p className="text-sm text-muted-foreground">Загрузите фотографию после ремонта. Статус изменится на «Исправлено», затем запустится проверка результата.</p><input type="file" accept="image/*" onChange={(event) => setAfterImage(event.target.files?.[0] ?? null)} aria-label="Фото после ремонта" /><Button type="button" disabled={!afterImage || afterImageMutation.isPending} onClick={() => afterImage && afterImageMutation.mutate(afterImage)}><Upload />Загрузить и проверить</Button></section>}
+    <section className="grid gap-3 rounded-xl border p-4" aria-labelledby="status-title"><h3 id="status-title" className="font-semibold">Статус и критичность</h3><label className="grid gap-2" htmlFor="defect-status"><span className="text-sm font-medium">Статус</span><Select value={status} onValueChange={(value) => setStatus(value as DefectStatus)}><SelectTrigger id="defect-status"><SelectValue /></SelectTrigger><SelectContent>{availableStatuses.map((value) => <SelectItem key={value} value={value}>{defectStatusLabels[value]}</SelectItem>)}</SelectContent></Select></label>{user?.role === 'admin' && <label className="grid gap-2" htmlFor="defect-severity"><span className="text-sm font-medium">Критичность</span><Select value={severity ?? undefined} onValueChange={(value) => setSeverity(value as DefectSeverity)}><SelectTrigger id="defect-severity"><SelectValue placeholder="Ожидает анализа" /></SelectTrigger><SelectContent>{Object.entries(defectSeverityLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></label>}</section>
+    <section className="grid gap-3 rounded-xl border p-4" aria-labelledby="history-title"><h3 id="history-title" className="font-semibold">История изменений</h3>{eventsQuery.isLoading ? <p className="text-sm text-muted-foreground">Загрузка истории…</p> : eventsQuery.isError ? <p className="text-sm text-red-400">История временно недоступна.</p> : eventsQuery.data?.length ? <ol className="space-y-3">{eventsQuery.data.map((event) => <li key={event.id} className="border-l-2 border-primary/40 pl-3"><p className="font-medium">{eventLabels[event.event_type] ?? event.event_type}</p><p className="flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3" />{new Date(event.created_at).toLocaleString('ru-RU')}{event.actor_id ? ` · пользователь #${event.actor_id}` : ''}</p>{Object.keys(event.details).length > 0 && <p className="mt-1 break-words text-xs text-muted-foreground">{Object.entries(event.details).map(([key, value]) => `${key}: ${String(value)}`).join(' · ')}</p>}</li>)}</ol> : <p className="text-sm text-muted-foreground">Событий пока нет.</p>}</section>
+  </div><DialogFooter><DialogClose render={<Button variant="outline" />}>Закрыть</DialogClose><Button onClick={handleSave} disabled={updateMutation.isPending || (status === current.status && severity === current.severity)}>{updateMutation.isPending && <Loader2 className="animate-spin" />}Сохранить статус</Button></DialogFooter></DialogContent></Dialog>
 }

@@ -19,7 +19,6 @@ export default function UploadPage() {
       return response.data;
     },
     onSuccess: () => {
-      // Clear form on success
       setTimeout(() => {
         setFile(null);
         setPreview(null);
@@ -96,7 +95,6 @@ export default function UploadPage() {
     uploadMutation.mutate(formData);
   };
 
-  // Get current location
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -123,7 +121,6 @@ export default function UploadPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Upload Area */}
         <div className="space-y-4">
           <div 
             className={`relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl transition-colors ${
@@ -172,7 +169,6 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Form Area */}
         <div className="space-y-6 bg-card p-6 rounded-xl border shadow-sm h-fit">
           <h3 className="text-lg font-semibold border-b pb-4">Местоположение</h3>
           

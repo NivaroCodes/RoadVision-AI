@@ -91,6 +91,27 @@ try:
     if separate["id"] == first["id"]:
         raise AssertionError("distant reports must create separate defects")
 
+    mine = client.get("/api/v1/defects/mine", headers=resident_headers)
+    expect(mine.status_code, 200, "resident defect list")
+    if first["id"] not in {item["id"] for item in mine.json()}:
+        raise AssertionError("resident defect list must include submitted reports")
+
+    created_date = first["created_at"][:10]
+    date_filtered = client.get(
+        "/api/v1/defects/",
+        headers=admin_headers,
+        params={"start_date": created_date, "end_date": created_date},
+    )
+    expect(date_filtered.status_code, 200, "inclusive end date registry")
+    if first["id"] not in {item["id"] for item in date_filtered.json()}:
+        raise AssertionError("date-only end_date must include the entire selected day")
+
+    map_response = client.get("/api/v1/defects/map", headers=road_headers)
+    expect(map_response.status_code, 200, "map defects")
+    map_item = next(item for item in map_response.json() if item["id"] == first["id"])
+    if map_item["address"] != "Shymkent" or not map_item["created_at"]:
+        raise AssertionError("map defects must expose address and creation time")
+
     expect(client.get(f"/api/v1/defects/{first['id']}", headers=other_resident_headers).status_code, 200, "resident aggregated ownership")
     expect(client.get(f"/api/v1/defects/{separate['id']}", headers=other_resident_headers).status_code, 403, "resident foreign report")
     expect(client.patch(f"/api/v1/defects/{first['id']}", headers=resident_headers, json={"status": "in_progress"}).status_code, 403, "resident workflow update")
