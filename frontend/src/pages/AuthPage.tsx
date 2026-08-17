@@ -38,13 +38,13 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-2">
       <section className="hidden border-r bg-card p-12 lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-3 text-xl font-bold"><Map className="h-7 w-7" />RoadVision AI</div>
+        <div className="flex items-center gap-3 text-xl font-bold"><Map className="h-7 w-7" />Jol Scan</div>
         <div className="max-w-lg">
           <ShieldCheck className="mb-6 h-12 w-12 text-primary" />
           <h1 className="text-4xl font-bold tracking-tight">Безопасное управление дорожной инфраструктурой</h1>
           <p className="mt-4 text-lg text-muted-foreground">Доступ к данным и действиям определяется вашей ролью.</p>
         </div>
-        <p className="text-sm text-muted-foreground">RoadVision AI · Шымкент</p>
+        <p className="text-sm text-muted-foreground">Jol Scan · Шымкент</p>
       </section>
       <section className="flex items-center justify-center p-6 sm:p-10">
         <form onSubmit={submit} className="w-full max-w-md space-y-6 rounded-2xl border bg-card p-6 shadow-xl sm:p-8">

@@ -28,4 +28,4 @@ async def health_check():
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to RoadVision AI API"}
+    return {"message": "Welcome to Jol Scan API"}

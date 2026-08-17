@@ -11,10 +11,10 @@ function escapeCSVValue(value: string | number): string {
 export function createDefectsCSV(defects: readonly DefectMarker[]): string {
   const rows = defects.map((defect) => [
     defect.id,
-    defectTypeLabels[defect.type],
-    defectSeverityLabels[defect.severity],
+    defect.type ? defectTypeLabels[defect.type] : 'Ожидает анализа',
+    defect.severity ? defectSeverityLabels[defect.severity] : 'Ожидает анализа',
     defectStatusLabels[defect.status],
-    `${Math.round(defect.confidence * 100)}%`,
+    defect.confidence === null ? '' : `${Math.round(defect.confidence * 100)}%`,
     defect.address ?? 'Шымкент',
   ])
 
@@ -30,7 +30,7 @@ export function exportToCSV(defects: readonly DefectMarker[]): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `roadvision-defects-${new Date().toISOString().slice(0, 10)}.csv`
+  anchor.download = `jol-scan-defects-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.append(anchor)
   anchor.click()
   anchor.remove()

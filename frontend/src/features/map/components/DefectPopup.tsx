@@ -7,7 +7,7 @@ interface DefectPopupProps {
 }
 
 export function DefectPopup({ defect }: DefectPopupProps) {
-  const confidence = Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
+  const confidence = defect.confidence === null ? null : Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
 
   return (
     <Popup className="defect-popup" minWidth={220}>
@@ -16,7 +16,7 @@ export function DefectPopup({ defect }: DefectPopupProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Дефект #{defect.id}
           </p>
-          <h3 className="text-base font-semibold text-foreground">{defectTypeLabels[defect.type]}</h3>
+          <h3 className="text-base font-semibold text-foreground">{defect.type ? defectTypeLabels[defect.type] : 'Ожидает анализа'}</h3>
         </div>
 
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
@@ -24,11 +24,11 @@ export function DefectPopup({ defect }: DefectPopupProps) {
           <dd className="text-right font-medium text-foreground">{defectStatusLabels[defect.status]}</dd>
           <dt className="text-muted-foreground">Критичность</dt>
           <dd className="text-right font-medium capitalize text-foreground">
-            {defectSeverityLabels[defect.severity]}
+            {defect.severity ? defectSeverityLabels[defect.severity] : 'Ожидает анализа'}
           </dd>
           <dt className="text-muted-foreground">Уверенность</dt>
           <dd className="text-right font-medium text-foreground">
-            {confidence}%
+            {confidence === null ? '—' : `${confidence}%`}
           </dd>
         </dl>
 

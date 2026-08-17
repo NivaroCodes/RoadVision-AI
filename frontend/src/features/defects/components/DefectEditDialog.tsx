@@ -29,7 +29,7 @@ interface DefectEditDialogProps {
 
 export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDialogProps) {
   const [status, setStatus] = useState<DefectStatus>('detected')
-  const [severity, setSeverity] = useState<DefectSeverity>('low')
+  const [severity, setSeverity] = useState<DefectSeverity | null>(null)
 
   useEffect(() => {
     if (defect) {
@@ -43,7 +43,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
   const handleSave = () => {
     if (!defect) return
     updateMutation.mutate(
-      { id: defect.id, data: { status, severity } },
+      { id: defect.id, data: { status, ...(severity ? { severity } : {}) } },
       { onSuccess: () => onSave() }
     )
   }
@@ -54,7 +54,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
         <DialogHeader>
           <DialogTitle>Редактирование дефекта #{defect?.id}</DialogTitle>
           <DialogDescription>
-            {defect ? `${defectTypeLabels[defect.type]} · ${defect.address ?? 'Шымкент'}` : ''}
+            {defect ? `${defect.type ? defectTypeLabels[defect.type] : 'Ожидает анализа'} · ${defect.address ?? 'Шымкент'}` : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -80,9 +80,9 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
 
           <label className="grid gap-2" htmlFor="defect-severity">
             <span className="text-sm font-medium text-neutral-200">Критичность</span>
-            <Select value={severity} onValueChange={(value) => setSeverity(value as DefectSeverity)}>
+            <Select value={severity ?? undefined} onValueChange={(value) => setSeverity(value as DefectSeverity)}>
               <SelectTrigger id="defect-severity" className="h-11 w-full border-neutral-700 bg-neutral-950 text-neutral-100 hover:bg-neutral-900">
-                <SelectValue>{defectSeverityLabels[severity]}</SelectValue>
+                <SelectValue>{severity ? defectSeverityLabels[severity] : 'Ожидает анализа'}</SelectValue>
               </SelectTrigger>
               <SelectContent className="defects-select-content">
                 {Object.entries(defectSeverityLabels).map(([value, label]) => (

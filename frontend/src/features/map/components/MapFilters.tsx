@@ -28,6 +28,9 @@ const TYPE_OPTIONS = [
   { value: 'crack', label: 'Трещины' },
   { value: 'pothole', label: 'Ямы' },
   { value: 'net', label: 'Сетка трещин' },
+  { value: 'road_collapse', label: 'Обрушение дороги' },
+  { value: 'damaged_manhole', label: 'Повреждённый люк' },
+  { value: 'other', label: 'Другой дефект' },
 ] as const;
 
 const SEVERITY_OPTIONS = [
@@ -40,9 +43,11 @@ const SEVERITY_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Все статусы' },
+  { value: 'submitted', label: 'Ожидает анализа' },
   { value: 'detected', label: 'Обнаружено' },
   { value: 'in_progress', label: 'В работе' },
   { value: 'fixed', label: 'Исправлено' },
+  { value: 'verified', label: 'Проверено' },
   { value: 'rejected', label: 'Отклонено' },
 ] as const;
 

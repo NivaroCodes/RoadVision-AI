@@ -1,15 +1,15 @@
-export type DefectType = 'crack' | 'pothole' | 'net';
-export type DefectStatus = 'detected' | 'in_progress' | 'fixed' | 'rejected';
+export type DefectType = 'crack' | 'pothole' | 'net' | 'road_collapse' | 'damaged_manhole' | 'other';
+export type DefectStatus = 'submitted' | 'detected' | 'in_progress' | 'fixed' | 'verified' | 'rejected';
 export type DefectSeverity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface DefectMarker {
   id: number;
-  type: DefectType;
+  type: DefectType | null;
   status: DefectStatus;
-  severity: DefectSeverity;
+  severity: DefectSeverity | null;
   latitude: number;
   longitude: number;
-  confidence: number;
+  confidence: number | null;
   address?: string;
   created_at?: string;
 }

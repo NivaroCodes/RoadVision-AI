@@ -34,7 +34,7 @@ export function MapView() {
       (filters.type === 'all' || defect.type === filters.type) && 
       (filters.severity === 'all' || defect.severity === filters.severity) && 
       (filters.status === 'all' || defect.status === filters.status) && 
-      defect.confidence * 100 >= filters.minConfidence
+      (defect.confidence ?? 0) * 100 >= filters.minConfidence
     )
   }, [defects, filters])
 

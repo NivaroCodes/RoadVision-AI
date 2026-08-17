@@ -1,191 +1,156 @@
-from datetime import datetime
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Query
-from fastapi import status as http_status
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
-from typing import List, Optional
+from datetime import datetime, timezone
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy.orm import Session
+
+from app.auth.dependencies import get_current_user, require_admin, require_staff, require_submitter
 from app.core.db import get_db
-from app.auth.dependencies import get_current_user, require_staff, require_submitter
-from app.models.defect import DefectStatus, DefectSeverity, DefectType
+from app.models.defect import Defect, DefectEvent, DefectSeverity, DefectStatus, DefectType
 from app.models.user import User, UserRole
 from app.repositories.defect import DefectRepository
+from app.schemas.defect import AnalysisRequest, AssignmentRequest, DefectEventRead, DefectMapRead, DefectRead, DefectUpdate, VerificationRead
 from app.services.defect import DefectService
-from app.schemas.defect import DefectRead, DefectMapRead, DefectUpdate
 from app.services.websocket import manager
 
 router = APIRouter()
-
-defect_repo = DefectRepository()
-defect_service = DefectService(defect_repo)
-
-MAX_FILE_SIZE = 10 * 1024 * 1024
-ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/jpg"]
-
-@router.post(
-    "/upload", 
-    response_model=DefectRead,
-    summary="Upload a new defect image",
-    description="Accepts an image and coordinates. Validates the image type, size, and uses Mock AI to detect the defect."
-)
-async def upload_defect(
-    latitude: float = Form(..., ge=-90, le=90, description="Latitude of the defect"),
-    longitude: float = Form(..., ge=-180, le=180, description="Longitude of the defect"),
-    address: Optional[str] = Form(None, description="Optional address of the defect"),
-    image: UploadFile = File(..., description="Image file (JPG/PNG), max 10MB"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_submitter),
-):
-    if image.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=http_status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, 
-            detail="Unsupported file type. Only JPG, JPEG, and PNG are allowed."
-        )
-        
-    content = await image.read()
-    if not content:
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST, 
-            detail="Empty file is not allowed."
-        )
-        
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=http_status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, 
-            detail="File too large. Maximum size is 10 MB."
-        )
-
-    try:
-        defect = defect_service.process_image_detection(
-            db=db,
-            file_content=content,
-            filename=image.filename or "unknown.jpg",
-            latitude=latitude,
-            longitude=longitude,
-            address=address,
-            owner_id=current_user.id,
-        )
-        
-        await manager.broadcast({
-            "event": "DEFECT_CREATED",
-            "entity": "defect",
-            "id": defect.id,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        })
-        
-        return defect
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
+repository = DefectRepository()
+service = DefectService(repository)
+max_file_size = 10 * 1024 * 1024
+allowed_content_types = {"image/jpeg", "image/png", "image/jpg"}
 
 
-@router.get(
-    "/", 
-    response_model=List[DefectRead],
-    summary="Get multiple defects",
-    description="Fetch a paginated list of defects with optional filtering by type, status, and severity."
-)
-def get_defects(
-    skip: int = Query(0, ge=0, description="Pagination skip"),
-    limit: int = Query(20, ge=1, le=100, description="Pagination limit"),
-    type: Optional[DefectType] = Query(None, description="Filter by defect type"),
-    status: Optional[DefectStatus] = Query(None, description="Filter by defect status"),
-    severity: Optional[DefectSeverity] = Query(None, description="Filter by defect severity"),
-    start_date: Optional[datetime] = Query(None, description="Filter by start date"),
-    end_date: Optional[datetime] = Query(None, description="Filter by end date"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_staff),
-):
-    try:
-        return defect_repo.get_multi(
-            db=db,
-            skip=skip,
-            limit=limit,
-            type=type,
-            status=status,
-            severity=severity,
-            start_date=start_date,
-            end_date=end_date
-        )
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
-
-
-@router.get(
-    "/map", 
-    response_model=List[DefectMapRead],
-    summary="Get all defects for map visualization",
-    description="Fetch a lightweight representation of all defects for mapping."
-)
-def get_map_defects(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_staff),
-):
-    try:
-        return defect_repo.get_all_for_map(db)
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
-
-
-@router.get("/mine", response_model=List[DefectRead])
-def get_my_defects(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    try:
-        return defect_repo.get_by_owner(db, current_user.id)
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
-
-
-@router.get(
-    "/{id}", 
-    response_model=DefectRead,
-    summary="Get a specific defect by ID",
-    description="Fetch full details of a specific defect by its ID."
-)
-def get_defect(
-    id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    try:
-        defect = defect_repo.get_by_id(db, id)
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
-        
-    if not defect:
-        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Defect not found")
-    if current_user.role == UserRole.resident and defect.owner_id != current_user.id:
-        raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Access denied")
+def get_defect_or_404(db: Session, defect_id: int) -> Defect:
+    defect = repository.get_by_id(db, defect_id)
+    if defect is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Defect not found")
     return defect
 
 
-@router.patch(
-    "/{id}", 
-    response_model=DefectRead,
-    summary="Update defect",
-    description="Update an existing defect."
-)
+async def read_image(image: UploadFile) -> bytes:
+    if image.content_type not in allowed_content_types:
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Only JPG, JPEG, and PNG images are allowed")
+    content = await image.read()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty files are not allowed")
+    if len(content) > max_file_size:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Maximum image size is 10 MB")
+    return content
+
+
+async def broadcast(event: str, defect_id: int) -> None:
+    await manager.broadcast({"event": event, "entity": "defect", "id": defect_id, "timestamp": datetime.now(timezone.utc).isoformat()})
+
+
+@router.post("/upload", response_model=DefectRead)
+async def upload_defect(
+    latitude: float = Form(..., ge=-90, le=90),
+    longitude: float = Form(..., ge=-180, le=180),
+    address: str | None = Form(None),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_submitter),
+) -> Defect:
+    content = await read_image(image)
+    defect = service.create_report(db, content, image.filename or "report.jpg", latitude, longitude, address, current_user.id)
+    await broadcast("DEFECT_CREATED", defect.id)
+    return defect
+
+
+@router.get("/", response_model=list[DefectRead])
+def get_defects(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    type: DefectType | None = None,
+    status_filter: DefectStatus | None = Query(None, alias="status"),
+    severity: DefectSeverity | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
+) -> list[Defect]:
+    return repository.get_multi(db, skip, limit, type, status_filter, severity, start_date, end_date)
+
+
+@router.get("/map", response_model=list[DefectMapRead])
+def get_map_defects(db: Session = Depends(get_db), current_user: User = Depends(require_staff)) -> list[Defect]:
+    return repository.get_all_for_map(db)
+
+
+@router.get("/mine", response_model=list[DefectRead])
+def get_my_defects(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[Defect]:
+    return repository.get_by_owner(db, current_user.id)
+
+
+@router.get("/priority", response_model=list[DefectRead])
+def get_priority_defects(
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
+) -> list[Defect]:
+    return repository.get_priority_list(db, limit)
+
+
+@router.get("/{defect_id}", response_model=DefectRead)
+def get_defect(defect_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Defect:
+    defect = get_defect_or_404(db, defect_id)
+    if current_user.role == UserRole.resident and not repository.resident_has_report(db, defect.id, current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    return defect
+
+
+@router.get("/{defect_id}/events", response_model=list[DefectEventRead])
+def get_defect_events(defect_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[DefectEvent]:
+    get_defect(defect_id, db, current_user)
+    return repository.get_events(db, defect_id)
+
+
+@router.patch("/{defect_id}", response_model=DefectRead)
 async def update_defect(
-    id: int,
+    defect_id: int,
     defect_in: DefectUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_staff),
-):
-    try:
-        defect = defect_repo.get_by_id(db, id)
-        if not defect:
-            raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Defect not found")
-        
-        updated_defect = defect_repo.update_defect(db, defect, defect_in)
-        
-        await manager.broadcast({
-            "event": "DEFECT_UPDATED",
-            "entity": "defect",
-            "id": updated_defect.id,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        })
-        
-        return updated_defect
-    except SQLAlchemyError:
-        raise HTTPException(status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
+) -> Defect:
+    defect = service.update(db, get_defect_or_404(db, defect_id), defect_in, current_user)
+    await broadcast("DEFECT_UPDATED", defect.id)
+    return defect
+
+
+@router.post("/{defect_id}/analysis", response_model=DefectRead)
+def submit_analysis(
+    defect_id: int,
+    analysis: AnalysisRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> Defect:
+    return service.apply_analysis(db, get_defect_or_404(db, defect_id), analysis, current_user.id)
+
+
+@router.post("/{defect_id}/assign", response_model=DefectRead)
+def assign_defect(
+    defect_id: int,
+    assignment: AssignmentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
+) -> Defect:
+    assignee = db.get(User, assignment.road_service_user_id)
+    if assignee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee not found")
+    if current_user.role == UserRole.road_service and assignee.id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service users can only assign defects to themselves")
+    return service.assign(db, get_defect_or_404(db, defect_id), assignee, current_user.id)
+
+
+@router.post("/{defect_id}/after-image", response_model=VerificationRead)
+async def upload_after_image(
+    defect_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_staff),
+) -> VerificationRead:
+    content = await read_image(image)
+    defect = get_defect_or_404(db, defect_id)
+    if current_user.role == UserRole.road_service and defect.assigned_to_id not in (None, current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Defect is assigned to another Road Service user")
+    updated = service.upload_after_image(db, defect, content, image.filename or "after.jpg", current_user.id)
+    return VerificationRead(defect_id=updated.id, status=updated.verification_status, confidence=updated.verification_confidence, after_image_url=updated.after_image_url or "")

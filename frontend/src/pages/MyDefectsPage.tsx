@@ -4,9 +4,11 @@ import { apiClient } from '@/api/client';
 import type { DefectMarker } from '@/features/map/types';
 
 const labels = {
+  submitted: 'Ожидает анализа',
   detected: 'Обнаружен',
   in_progress: 'В работе',
   fixed: 'Исправлен',
+  verified: 'Проверен',
   rejected: 'Отклонён',
 };
 
