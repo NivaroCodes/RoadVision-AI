@@ -1,4 +1,4 @@
-﻿app = "qala-vision-app"
+app = "qala-vision-app"
 primary_region = "fra"
 
 [build]
