@@ -2,7 +2,12 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { clearTokens, getAccessToken, getRefreshToken, storeTokens } from '@/features/auth/storage';
 import type { TokenPair } from '@/features/auth/types';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
+const rawBaseURL = import.meta.env.VITE_API_URL || '/api/v1';
+const baseURL = rawBaseURL.endsWith('/api/v1')
+  ? rawBaseURL
+  : rawBaseURL.startsWith('http')
+  ? `${rawBaseURL.replace(/\/+$/, '')}/api/v1`
+  : rawBaseURL;
 
 export const apiClient = axios.create({
   baseURL,
