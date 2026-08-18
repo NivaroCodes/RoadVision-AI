@@ -70,7 +70,12 @@ export function ReportExportDialog({ defects, summary, period, triggerClassName 
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" className={triggerClassName} />}><FileText data-icon="inline-start" aria-hidden="true" />Экспорт отчёта</DialogTrigger>
+      <DialogTrigger asChild>
+        <Button variant="outline" className={triggerClassName}>
+          <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+          Экспорт отчёта
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader><DialogTitle>Экспорт PDF-отчёта</DialogTitle><DialogDescription>Выберите состав и период документа. Генерация выполняется только в браузере.</DialogDescription></DialogHeader>
         <fieldset className="grid gap-2"><legend className="mb-1 text-sm font-medium text-neutral-200">Тип отчёта</legend>{REPORT_OPTIONS.map((option) => <label key={option.value} className="flex min-h-16 cursor-pointer gap-3 rounded-lg border border-neutral-800 bg-neutral-950 p-3 transition-colors hover:border-neutral-700 hover:bg-neutral-900 has-[:checked]:border-neutral-500 has-[:checked]:bg-neutral-900"><input type="radio" name="report-mode" value={option.value} checked={mode === option.value} onChange={() => setMode(option.value)} className="mt-1 accent-white" /><span><span className="block font-medium text-neutral-100">{option.title}</span><span className="text-xs text-neutral-400">{option.description}</span></span></label>)}</fieldset>

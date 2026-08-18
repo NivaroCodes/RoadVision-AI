@@ -97,31 +97,29 @@ export function DateRangeFilter({
   return (
     <div className={cn('flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger 
-          render={
-            <Button
-              id="date"
-              variant={'outline'}
-              className={cn(
-                'w-full min-w-0 justify-start overflow-hidden text-left font-normal sm:w-[280px]',
-                !date && 'text-muted-foreground'
-              )}
-            />
-          }
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date?.from ? (
-            date.to ? (
-              <>
-                {format(date.from, 'dd MMM yyyy', { locale: ru })} -{' '}
-                {format(date.to, 'dd MMM yyyy', { locale: ru })}
-              </>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant={'outline'}
+            className={cn(
+              'w-full min-w-0 justify-start overflow-hidden text-left font-normal sm:w-[280px]',
+              !date && 'text-muted-foreground'
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, 'dd MMM yyyy', { locale: ru })} -{' '}
+                  {format(date.to, 'dd MMM yyyy', { locale: ru })}
+                </>
+              ) : (
+                format(date.from, 'dd MMM yyyy', { locale: ru })
+              )
             ) : (
-              format(date.from, 'dd MMM yyyy', { locale: ru })
-            )
-          ) : (
-            <span>Выберите период</span>
-          )}
+              <span>Выберите период</span>
+            )}
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-x-hidden p-0" align="end">
           <div className="flex flex-col md:flex-row">

@@ -7,38 +7,47 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: "oklch(from var(--border) l c h / <alpha-value>)",
-        input: "oklch(from var(--input) l c h / <alpha-value>)",
-        ring: "oklch(from var(--ring) l c h / <alpha-value>)",
-        background: "oklch(from var(--background) l c h / <alpha-value>)",
-        foreground: "oklch(from var(--foreground) l c h / <alpha-value>)",
+        surface: "var(--surface)",
+        "surface-2": "var(--surface-2)",
+        "border-strong": "var(--border-strong)",
+        critical: "var(--critical)",
+        high: "var(--high)",
+        medium: "var(--medium)",
+        low: "var(--low)",
+        route: "var(--route)",
+
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         primary: {
-          DEFAULT: "oklch(from var(--primary) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--primary-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
-          DEFAULT: "oklch(from var(--secondary) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--secondary-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
         },
         destructive: {
-          DEFAULT: "oklch(from var(--destructive) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--destructive-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
         },
         muted: {
-          DEFAULT: "oklch(from var(--muted) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--muted-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
         accent: {
-          DEFAULT: "oklch(from var(--accent) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--accent-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
         },
         popover: {
-          DEFAULT: "oklch(from var(--popover) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--popover-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
         },
         card: {
-          DEFAULT: "oklch(from var(--card) l c h / <alpha-value>)",
-          foreground: "oklch(from var(--card-foreground) l c h / <alpha-value>)",
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
         },
       },
       borderRadius: {

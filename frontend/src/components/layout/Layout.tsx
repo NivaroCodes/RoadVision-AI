@@ -9,10 +9,10 @@ export default function Layout() {
   useWebSocketSync();
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-background overflow-hidden font-sans text-foreground">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden lg:pl-[228px]">
         <Header toggleSidebar={() => setSidebarOpen(true)} />
         
         <main id="main-content" className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4 sm:p-6 lg:p-8">
