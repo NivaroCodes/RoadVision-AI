@@ -47,6 +47,22 @@ async def broadcast(event: str, defect_id: int) -> None:
     await manager.broadcast({"event": event, "entity": "defect", "id": defect_id, "timestamp": datetime.now(timezone.utc).isoformat()})
 
 
+import httpx
+import logging
+
+async def reverse_geocode(lat: float, lon: float) -> str | None:
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&accept-language=ru"
+        headers = {"User-Agent": "RoadVision-AI/1.0"}
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=headers, timeout=5.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("display_name")
+    except Exception as e:
+        logging.warning(f"Reverse geocode failed: {e}")
+    return None
+
 @router.post("/upload", response_model=DefectRead)
 async def upload_defect(
     latitude: float = Form(..., ge=-90, le=90),
@@ -57,6 +73,11 @@ async def upload_defect(
     current_user: User = Depends(require_submitter),
 ) -> Defect:
     content = await read_image(image)
+    if not address or not address.strip():
+        resolved = await reverse_geocode(latitude, longitude)
+        if resolved:
+            address = resolved
+            
     defect = service.create_report(db, content, image.filename or "report.jpg", latitude, longitude, address, current_user.id)
     await broadcast("DEFECT_CREATED", defect.id)
     return defect
