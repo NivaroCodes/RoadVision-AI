@@ -61,7 +61,7 @@ def enum_values(enum_class: type[enum.Enum]) -> list[str]:
 class Defect(Base, TimestampMixin):
     __tablename__ = "defects"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     type: Mapped[DefectType | None] = mapped_column(Enum(DefectType, name="defecttype", values_callable=enum_values), index=True)
     status: Mapped[DefectStatus] = mapped_column(Enum(DefectStatus, name="defectstatus", values_callable=enum_values), default=DefectStatus.SUBMITTED, index=True)
     severity: Mapped[DefectSeverity | None] = mapped_column(Enum(DefectSeverity, name="defectseverity", values_callable=enum_values), index=True)
@@ -85,7 +85,7 @@ class Defect(Base, TimestampMixin):
 class DefectReport(Base, TimestampMixin):
     __tablename__ = "defect_reports"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     defect_id: Mapped[int] = mapped_column(ForeignKey("defects.id", ondelete="CASCADE"), index=True)
     resident_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     image_url: Mapped[str] = mapped_column(String(512))
@@ -96,7 +96,7 @@ class DefectReport(Base, TimestampMixin):
 class DefectEvent(Base):
     __tablename__ = "defect_events"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     defect_id: Mapped[int] = mapped_column(ForeignKey("defects.id", ondelete="CASCADE"), index=True)
     actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)

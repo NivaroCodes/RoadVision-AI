@@ -5,12 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.router import api_router
+from app.core.db import engine, Base
+import app.models  # noqa: F401
+
+# Create tables if not exists
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,4 +33,4 @@ async def health_check():
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Jol Scan API"}
+    return {"message": "Welcome to Qala Vision API"}

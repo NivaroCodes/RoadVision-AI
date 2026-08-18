@@ -1,3 +1,4 @@
+import { RotateCcw, Search } from 'lucide-react';
 import type {
   DefectSeverity,
   DefectStatus,
@@ -13,23 +14,20 @@ interface MapFiltersProps {
   onReset: () => void;
 }
 
-const CONFIDENCE_OPTIONS = [0, 70, 80, 90] as const;
-
-interface FilterSelectProps {
-  id: string;
-  label: string;
-  value: string;
-  options: readonly { value: string; label: string }[];
-  onChange: (value: string) => void;
-}
+const CONFIDENCE_OPTIONS = [
+  { value: 0, label: 'Любая' },
+  { value: 70, label: '≥ 70%' },
+  { value: 85, label: '≥ 85%' },
+  { value: 95, label: '≥ 95%' },
+] as const;
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'Все типы' },
-  { value: 'crack', label: 'Трещины' },
-  { value: 'pothole', label: 'Ямы' },
+  { value: 'pothole', label: 'Яма' },
+  { value: 'crack', label: 'Трещина' },
   { value: 'net', label: 'Сетка трещин' },
-  { value: 'road_collapse', label: 'Обрушение дороги' },
-  { value: 'damaged_manhole', label: 'Повреждённый люк' },
+  { value: 'road_collapse', label: 'Провал покрытия' },
+  { value: 'damaged_manhole', label: 'Просадка люка' },
   { value: 'other', label: 'Другой дефект' },
 ] as const;
 
@@ -46,115 +44,110 @@ const STATUS_OPTIONS = [
   { value: 'submitted', label: 'Ожидает анализа' },
   { value: 'detected', label: 'Обнаружено' },
   { value: 'in_progress', label: 'В работе' },
-  { value: 'fixed', label: 'Исправлено' },
+  { value: 'fixed', label: 'Устранено' },
   { value: 'verified', label: 'Проверено' },
   { value: 'rejected', label: 'Отклонено' },
 ] as const;
 
-function FilterSelect({ id, label, value, options, onChange }: FilterSelectProps) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1.5" htmlFor={id}>
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="min-w-0 space-y-1.5">
+      <div className="text-eyebrow">{label}</div>
+      {children}
+    </div>
   );
 }
 
 export function MapFilters({
   filters,
-  resultCount,
-  totalCount,
   onChange,
   onReset,
 }: MapFiltersProps) {
-  const activeFilterCount = [
-    filters.type !== 'all',
-    filters.severity !== 'all',
-    filters.status !== 'all',
-    filters.query.trim() !== '',
-    filters.minConfidence > 0,
-  ].filter(Boolean).length;
-
   return (
-    <div className="map-filter-panel absolute left-3 right-3 top-3 z-[500] rounded-xl border p-3 shadow-xl backdrop-blur sm:left-4 sm:right-auto sm:w-[min(760px,calc(100%-2rem))]">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)_auto] lg:items-end">
-        <label className="flex min-w-0 flex-col gap-1.5" htmlFor="map-search-filter">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Поиск</span>
-          <input
-            id="map-search-filter"
-            type="search"
-            value={filters.query}
-            onChange={(event) => onChange({ ...filters, query: event.target.value })}
-            placeholder="ID или адрес"
-            className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
-          />
-        </label>
-        <FilterSelect
-          id="map-type-filter"
-          label="Тип"
-          value={filters.type}
-          options={TYPE_OPTIONS}
-          onChange={(type) => onChange({ ...filters, type: type as DefectType | 'all' })}
-        />
-        <label className="flex min-w-0 flex-col gap-1.5" htmlFor="map-confidence-filter">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Уверенность</span>
+    <section className="panel p-4 md:p-5">
+      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))_auto]">
+        <Field label="Поиск">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              id="map-search-filter"
+              type="search"
+              value={filters.query}
+              onChange={(event) => onChange({ ...filters, query: event.target.value })}
+              placeholder="ID или адрес"
+              className="h-9 w-full rounded-lg border border-border bg-surface/60 pl-9 pr-3 text-[12.5px] text-foreground outline-none transition focus-visible:border-ring"
+            />
+          </div>
+        </Field>
+
+        <Field label="Тип">
+          <select
+            id="map-type-filter"
+            value={filters.type}
+            onChange={(event) => onChange({ ...filters, type: event.target.value as DefectType | 'all' })}
+            className="h-9 w-full rounded-lg border border-border bg-surface/60 px-3 text-[12.5px] text-foreground outline-none transition focus-visible:border-ring"
+          >
+            {TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Уверенность">
           <select
             id="map-confidence-filter"
             value={filters.minConfidence}
             onChange={(event) => onChange({ ...filters, minConfidence: Number(event.target.value) })}
-            className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
+            className="h-9 w-full rounded-lg border border-border bg-surface/60 px-3 text-[12.5px] text-foreground outline-none transition focus-visible:border-ring"
           >
-            {CONFIDENCE_OPTIONS.map((value) => (
-              <option key={value} value={value}>{value === 0 ? 'Любая' : `от ${value}%`}</option>
+            {CONFIDENCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
-        </label>
-        <FilterSelect
-          id="map-severity-filter"
-          label="Критичность"
-          value={filters.severity}
-          options={SEVERITY_OPTIONS}
-          onChange={(severity) =>
-            onChange({ ...filters, severity: severity as DefectSeverity | 'all' })
-          }
-        />
-        <FilterSelect
-          id="map-status-filter"
-          label="Статус"
-          value={filters.status}
-          options={STATUS_OPTIONS}
-          onChange={(status) =>
-            onChange({ ...filters, status: status as DefectStatus | 'all' })
-          }
-        />
-        <div className="flex shrink-0 items-center justify-between gap-2 sm:pb-1">
-          <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
-            {resultCount} из {totalCount}
-          </p>
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={activeFilterCount === 0}
-            className="map-reset-button h-8 rounded-md px-2.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={`Reset ${activeFilterCount} active filters`}
+        </Field>
+
+        <Field label="Критичность">
+          <select
+            id="map-severity-filter"
+            value={filters.severity}
+            onChange={(event) => onChange({ ...filters, severity: event.target.value as DefectSeverity | 'all' })}
+            className="h-9 w-full rounded-lg border border-border bg-surface/60 px-3 text-[12.5px] text-foreground outline-none transition focus-visible:border-ring"
           >
-            Сброс{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </button>
-        </div>
+            {SEVERITY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Статус">
+          <select
+            id="map-status-filter"
+            value={filters.status}
+            onChange={(event) => onChange({ ...filters, status: event.target.value as DefectStatus | 'all' })}
+            className="h-9 w-full rounded-lg border border-border bg-surface/60 px-3 text-[12.5px] text-foreground outline-none transition focus-visible:border-ring"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <button
+          type="button"
+          onClick={onReset}
+          className="flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-[12.5px] font-medium text-foreground/90 transition-colors hover:border-border-strong hover:bg-surface"
+        >
+          <RotateCcw className="size-3.5 text-muted-foreground" /> Сброс
+        </button>
       </div>
-    </div>
+    </section>
   );
 }

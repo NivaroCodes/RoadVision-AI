@@ -11,31 +11,31 @@ import { cn } from "@/lib/utils";
 import { QalaBrand } from "./QalaLogo";
 import { useAuth } from "@/features/auth/useAuth";
 
-const navItems = [
+export const navItems = [
   { label: "Дашборд", to: "/dashboard", icon: LayoutDashboard, roles: ["admin"] },
   { label: "Карта", to: "/map", icon: Map, roles: ["admin", "road_service"] },
   { label: "Журнал дефектов", to: "/defects", icon: ClipboardList, roles: ["admin", "road_service"] },
-  { label: "Загрузка данных", to: "/upload", icon: UploadCloud, roles: ["admin", "resident"] },
+  {
+    label: "Загрузка данных",
+    to: "/upload",
+    icon: UploadCloud,
+    roles: ["admin", "resident"],
+  },
   { label: "Мои обращения", to: "/my-requests", icon: ClipboardList, roles: ["resident"] },
   { label: "Пользователи", to: "/users", icon: Users, roles: ["admin"] },
 ] as const;
 
-export function Sidebar({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const { user } = useAuth();
-  
   if (!user) return null;
+
   const items = navItems.filter((i) => (i.roles as readonly string[]).includes(user.role));
 
-  const content = (
+  return (
     <div className="flex h-full flex-col border-r border-border bg-card">
       <QalaBrand />
+
       <div className="px-5 pb-2 text-eyebrow">Разделы</div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {items.map((item) => {
@@ -44,8 +44,8 @@ export function Sidebar({
           return (
             <NavLink
               key={item.to}
-              to={item.to}
-              onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+              to={{ pathname: item.to, search: location.search }}
+              onClick={onNavigate}
               className={cn(
                 "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors",
                 active
@@ -62,14 +62,23 @@ export function Sidebar({
           );
         })}
       </nav>
+
       <div className="p-3" />
     </div>
   );
+}
 
+export function Sidebar({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[228px] lg:block">
-        {content}
+        <SidebarContent />
       </aside>
 
       {isOpen && (
@@ -81,8 +90,9 @@ export function Sidebar({
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
           />
           <div className="absolute inset-y-0 left-0 w-[228px] animate-in slide-in-from-left duration-200">
-            {content}
+            <SidebarContent onNavigate={onClose} />
             <button
+              type="button"
               onClick={onClose}
               aria-label="Закрыть меню"
               className="absolute right-3 top-4 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"

@@ -2,11 +2,11 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { clearTokens, getAccessToken, getRefreshToken, storeTokens } from '@/features/auth/storage';
 import type { TokenPair } from '@/features/auth/types';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export const apiClient = axios.create({
   baseURL,
-  timeout: 10000,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 

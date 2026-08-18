@@ -1,21 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function SummaryCardsSkeleton() {
+export function SummaryCardsSkeleton({ className = "grid grid-cols-1 gap-3.5 sm:grid-cols-2" }: { className?: string }) {
   return (
-    <div className="grid gap-4 grid-cols-2">
+    <div className={className}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+        <div key={i} className="panel p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="size-8 rounded-lg" />
               <Skeleton className="h-4 w-24" />
-            </CardTitle>
-            <Skeleton className="h-4 w-4 rounded-full" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-16" />
-          </CardContent>
-        </Card>
+            </div>
+            <Skeleton className="h-7 w-[72px]" />
+          </div>
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-4 w-32" />
+        </div>
       ))}
     </div>
   );

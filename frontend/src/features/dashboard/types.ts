@@ -8,4 +8,6 @@ export interface DashboardSummary {
 export interface TrendPoint {
   date: string;
   count: number;
+  critical?: number;
+  label?: string;
 }

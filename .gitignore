@@ -1,8 +1,16 @@
 .idea/
-__pycache__/
+.vscode/
+**/__pycache__/
 *.py[cod]
+*$py.class
+*.db
+*.sqlite
+*.sqlite3
 .env
 .env.*
 backend/uploads/
+backend/venv/
 ml/data/
 ml/.venv/
+frontend/dist/
+frontend/node_modules/

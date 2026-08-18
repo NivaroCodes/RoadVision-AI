@@ -13,6 +13,9 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AccessDeniedPage = lazy(() => import('./pages/AccessDeniedPage'));
 const MyDefectsPage = lazy(() => import('./pages/MyDefectsPage'));
 const UsersPage = lazy(() => import('./pages/UsersPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const AccessPage = lazy(() => import('./pages/AccessPage'));
 
 function HomeRoute() {
   const { user } = useAuth();
@@ -35,6 +38,9 @@ const router = createBrowserRouter([
       { path: 'upload', element: <ProtectedRoute roles={['admin', 'resident']}><UploadPage /></ProtectedRoute> },
       { path: 'my-requests', element: <ProtectedRoute roles={['resident']}><MyDefectsPage /></ProtectedRoute> },
       { path: 'users', element: <ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute> },
+      { path: 'profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+      { path: 'settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
+      { path: 'access', element: <ProtectedRoute roles={['admin']}><AccessPage /></ProtectedRoute> },
       { path: 'access-denied', element: <AccessDeniedPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

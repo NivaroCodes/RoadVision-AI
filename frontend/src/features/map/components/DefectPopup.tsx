@@ -1,9 +1,69 @@
 import { Popup } from 'react-leaflet';
 import type { DefectMarker } from '../types';
 import { defectTypeLabels, defectStatusLabels, defectSeverityLabels } from '@/features/defects/labels';
+import { severityClasses, statusChip } from '@/lib/roadvision-data';
+import { cn } from '@/lib/utils';
 
-interface DefectPopupProps { defect: DefectMarker; }
+interface DefectPopupProps {
+  defect: DefectMarker;
+}
+
 export function DefectPopup({ defect }: DefectPopupProps) {
   const confidence = defect.confidence === null ? null : Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
-  return <Popup className="defect-popup" minWidth={220}><div className="space-y-3"><div className="border-b border-border pb-2"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Дефект #{defect.id}</p><h3 className="text-base font-semibold text-foreground">{defect.type ? defectTypeLabels[defect.type] : 'Ожидает анализа'}</h3></div><dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm"><dt className="text-muted-foreground">Статус</dt><dd className="text-right font-medium text-foreground">{defectStatusLabels[defect.status]}</dd><dt className="text-muted-foreground">Критичность</dt><dd className="text-right font-medium text-foreground">{defect.severity ? defectSeverityLabels[defect.severity] : 'Ожидает анализа'}</dd><dt className="text-muted-foreground">Приоритет</dt><dd className="text-right font-medium capitalize text-foreground">{defect.priority}</dd><dt className="text-muted-foreground">Подтверждений</dt><dd className="text-right font-medium text-foreground">{defect.confirmation_count}</dd><dt className="text-muted-foreground">Уверенность</dt><dd className="text-right font-medium text-foreground">{confidence === null ? '—' : `${confidence}%`}</dd></dl><p className="border-t border-border pt-2 text-xs leading-relaxed text-muted-foreground">{defect.address ?? 'Адрес не указан'}</p></div></Popup>;
+  const typeText = defect.type ? defectTypeLabels[defect.type] : 'Дефект дороги';
+  const severity = defect.severity ?? 'low';
+
+  return (
+    <Popup className="defect-popup" minWidth={240}>
+      <div className="space-y-3 p-1">
+        <div className="border-b border-border pb-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[14px] font-semibold text-foreground">
+              {typeText}
+            </h3>
+            <span className="num text-[12px] font-bold text-muted-foreground">
+              #{defect.id}
+            </span>
+          </div>
+          <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+            {defect.address ?? `${defect.latitude.toFixed(4)}, ${defect.longitude.toFixed(4)}`}
+          </p>
+        </div>
+
+        <dl className="grid grid-cols-2 gap-2 text-[12px]">
+          <div className="rounded-lg border border-border bg-surface/50 p-2">
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Критичность</dt>
+            <dd className="mt-0.5">
+              <span className={cn("inline-block rounded px-1.5 py-0.5 text-[10.5px] font-semibold", severityClasses[severity]?.chip)}>
+                {defect.severity ? defectSeverityLabels[defect.severity] : 'Не указана'}
+              </span>
+            </dd>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface/50 p-2">
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Статус</dt>
+            <dd className="mt-0.5">
+              <span className={cn("inline-block rounded px-1.5 py-0.5 text-[10.5px] font-semibold", statusChip[defect.status])}>
+                {defectStatusLabels[defect.status] ?? defect.status}
+              </span>
+            </dd>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface/50 p-2">
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Приоритет</dt>
+            <dd className="mt-0.5 font-semibold text-foreground capitalize">
+              {defect.priority ?? '—'}
+            </dd>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface/50 p-2">
+            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">ИИ Уверенность</dt>
+            <dd className="num mt-0.5 font-semibold text-foreground">
+              {confidence === null ? '—' : `${confidence}%`}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </Popup>
+  );
 }

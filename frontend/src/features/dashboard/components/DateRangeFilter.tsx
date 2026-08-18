@@ -6,7 +6,6 @@ import type { DateRange } from 'react-day-picker';
 import { useSearchParams } from 'react-router-dom';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -95,18 +94,17 @@ export function DateRangeFilter({
   const hasFilter = !!fromParam || !!toParam;
 
   return (
-    <div className={cn('flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center', className)}>
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-2', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant={'outline'}
+          <button
+            type="button"
             className={cn(
-              'w-full min-w-0 justify-start overflow-hidden text-left font-normal sm:w-[280px]',
+              'flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[12.5px] font-medium text-foreground/90 transition-colors hover:border-border-strong hover:bg-surface',
               !date && 'text-muted-foreground'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="size-3.5 text-muted-foreground" />
             {date?.from ? (
               date.to ? (
                 <>
@@ -117,38 +115,35 @@ export function DateRangeFilter({
                 format(date.from, 'dd MMM yyyy', { locale: ru })
               )
             ) : (
-              <span>Выберите период</span>
+              <span>Период: Выберите даты</span>
             )}
-          </Button>
+          </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-x-hidden p-0" align="end">
+        <PopoverContent className="w-auto max-w-[calc(100vw-1rem)] overflow-x-hidden p-0 border border-border bg-popover text-popover-foreground shadow-panel rounded-xl" align="end">
           <div className="flex flex-col md:flex-row">
-            <div className="flex flex-col gap-2 border-b border-neutral-800 p-4 md:border-r md:border-b-0">
-              <span className="text-sm font-medium mb-1">Пресеты</span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="justify-start"
+            <div className="flex flex-col gap-2 border-b border-border p-4 md:border-r md:border-b-0">
+              <span className="text-eyebrow mb-1">Пресеты</span>
+              <button
+                type="button"
+                className="h-8 rounded-md border border-border bg-surface/50 px-2.5 text-left text-[12px] text-foreground transition-colors hover:bg-surface"
                 onClick={() => setPreset(7)}
               >
                 За последние 7 дней
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="justify-start"
+              </button>
+              <button
+                type="button"
+                className="h-8 rounded-md border border-border bg-surface/50 px-2.5 text-left text-[12px] text-foreground transition-colors hover:bg-surface"
                 onClick={() => setPreset(30)}
               >
                 За последние 30 дней
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="justify-start"
+              </button>
+              <button
+                type="button"
+                className="h-8 rounded-md border border-border bg-surface/50 px-2.5 text-left text-[12px] text-foreground transition-colors hover:bg-surface"
                 onClick={() => setPreset(365)}
               >
                 За последние 365 дней
-              </Button>
+              </button>
             </div>
             <div className="p-2">
               <Calendar
@@ -165,14 +160,14 @@ export function DateRangeFilter({
       </Popover>
 
       {hasFilter && (
-        <Button
-          variant="ghost"
+        <button
+          type="button"
           onClick={resetFilter}
-          className="text-muted-foreground hover:text-foreground"
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
         >
           Сбросить фильтр
-          <X className="ml-2 h-4 w-4" />
-        </Button>
+          <X className="size-3.5" />
+        </button>
       )}
     </div>
   );

@@ -72,8 +72,13 @@ def get_defects(
 
 
 @router.get("/map", response_model=list[DefectMapRead])
-def get_map_defects(db: Session = Depends(get_db), current_user: User = Depends(require_staff)) -> list[Defect]:
-    return repository.get_all_for_map(db)
+def get_map_defects(
+    start_date: datetime | None = Query(None, description="Filter by start date"),
+    end_date: datetime | None = Query(None, description="Filter by end date"),
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(require_staff)
+) -> list[Defect]:
+    return repository.get_all_for_map(db, start_date=start_date, end_date=end_date)
 
 
 @router.get("/mine", response_model=list[DefectRead])
