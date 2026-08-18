@@ -9,4 +9,15 @@ dependencies = [
     "Pillow>=10.0.0",
     "matplotlib>=3.8.0",
     "numpy>=1.26.0",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.52.3",
+    "pydantic>=2.13.4",
+    "python-multipart>=0.0.32",
+    "ultralytics>=8.4.121",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
 ]
