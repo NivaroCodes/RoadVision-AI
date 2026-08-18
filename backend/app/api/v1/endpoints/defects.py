@@ -7,6 +7,7 @@ from app.auth.dependencies import get_current_user, require_admin, require_staff
 from app.core.db import get_db
 from app.models.defect import Defect, DefectEvent, DefectSeverity, DefectStatus, DefectType
 from app.models.user import User, UserRole
+from app.core.config import settings
 from app.repositories.defect import DefectRepository
 from app.schemas.defect import AnalysisRequest, AssignmentRequest, DefectEventRead, DefectMapRead, DefectRead, DefectUpdate, VerificationRead
 from app.services.defect import DefectService
@@ -18,8 +19,8 @@ router = APIRouter()
 repository = DefectRepository()
 service = DefectService(
     repository, 
-    detection_service=RemoteDetectionService(),
-    priority_engine=RemotePriorityEngine()
+    detection_service=RemoteDetectionService(ml_url=settings.ML_SERVICE_URL),
+    priority_engine=RemotePriorityEngine(ml_url=settings.ML_SERVICE_URL)
 )
 max_file_size = 10 * 1024 * 1024
 allowed_content_types = {"image/jpeg", "image/png", "image/jpg"}

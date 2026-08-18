@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+roadvision.db
+uploads/*
+!uploads/.gitkeep
+.pytest_cache/

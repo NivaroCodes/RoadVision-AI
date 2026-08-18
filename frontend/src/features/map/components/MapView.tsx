@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Layers, MapPinOff, Navigation } from 'lucide-react';
+import { MapPinOff, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, ZoomControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Skeleton } from '@/components/ui/skeleton';
