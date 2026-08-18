@@ -38,7 +38,7 @@ class RemoteDetectionService:
         import httpx
         # Send file to ML service
         files = {"file": ("image.jpg", image, "image/jpeg")}
-        response = httpx.post(f"{self.ml_url}/api/v1/detection", files=files, timeout=5.0)
+        response = httpx.post(f"{self.ml_url}/api/v1/detection", files=files, timeout=30.0)
         if response.status_code == 200:
             data = response.json()
             # Parse to DetectionResult

@@ -47,6 +47,46 @@ async def broadcast(event: str, defect_id: int) -> None:
     await manager.broadcast({"event": event, "entity": "defect", "id": defect_id, "timestamp": datetime.now(timezone.utc).isoformat()})
 
 
+import io
+from PIL import Image, ExifTags
+
+def get_gps_from_exif(image_bytes: bytes) -> tuple[float, float] | None:
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        exif = img._getexif()
+        if not exif:
+            return None
+        gps_info = None
+        for tag, value in exif.items():
+            decoded = ExifTags.TAGS.get(tag, tag)
+            if decoded == "GPSInfo":
+                gps_info = value
+                break
+        if not gps_info:
+            return None
+        gps_tags = {}
+        for t in gps_info:
+            sub_decoded = ExifTags.GPSTAGS.get(t, t)
+            gps_tags[sub_decoded] = gps_info[t]
+        def convert_to_degrees(value):
+            d = float(value[0])
+            m = float(value[1])
+            s = float(value[2])
+            return d + (m / 60.0) + (s / 3600.0)
+        lat = lon = None
+        if "GPSLatitude" in gps_tags and "GPSLatitudeRef" in gps_tags:
+            lat = convert_to_degrees(gps_tags["GPSLatitude"])
+            if gps_tags["GPSLatitudeRef"] != "N": lat = -lat
+        if "GPSLongitude" in gps_tags and "GPSLongitudeRef" in gps_tags:
+            lon = convert_to_degrees(gps_tags["GPSLongitude"])
+            if gps_tags["GPSLongitudeRef"] != "E": lon = -lon
+        if lat is not None and lon is not None:
+            return (lat, lon)
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not extract GPS from EXIF: {e}")
+    return None
+
 import httpx
 import logging
 
@@ -73,6 +113,12 @@ async def upload_defect(
     current_user: User = Depends(require_submitter),
 ) -> Defect:
     content = await read_image(image)
+    
+    gps = get_gps_from_exif(content)
+    if gps:
+        latitude, longitude = gps
+        address = None  # Clear address to force reverse geocoding of new EXIF coordinates
+
     if not address or not address.strip():
         resolved = await reverse_geocode(latitude, longitude)
         if resolved:

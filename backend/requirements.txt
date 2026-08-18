@@ -8,4 +8,5 @@ python-multipart
 PyJWT
 bcrypt
 email-validator
-httpx2
+httpx
+Pillow

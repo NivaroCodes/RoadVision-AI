@@ -60,22 +60,25 @@ class DefectService:
     ) -> Defect:
         image_url = self.save_image(file_content, filename)
         analysis = self.detection_service.analyze(file_content)
-        candidates = self.repository.find_duplicate_candidates(
-            db,
-            latitude,
-            longitude,
-            analysis.defect_type if analysis else None,
-            self.deduplication_policy.time_window_days,
-        )
-        duplicate = next((candidate for candidate in candidates if self.deduplication_policy.matches(latitude, longitude, analysis.defect_type if analysis else None, candidate)), None)
-        if duplicate is not None:
-            self.repository.add_report(db, duplicate.id, owner_id, image_url, latitude, longitude)
-            duplicate.confirmation_count += 1
-            self.apply_priority(duplicate)
-            self.repository.add_event(db, duplicate.id, owner_id, "report_confirmed", {"confirmation_count": duplicate.confirmation_count})
-            db.commit()
-            db.refresh(duplicate)
-            return duplicate
+        # --- TEMPORARILY DISABLED FOR HACKATHON DEMO ---
+        # We want every upload to create a new point on the map for visual effect
+        # candidates = self.repository.find_duplicate_candidates(
+        #     db,
+        #     latitude,
+        #     longitude,
+        #     analysis.defect_type if analysis else None,
+        #     self.deduplication_policy.time_window_days,
+        # )
+        # duplicate = next((candidate for candidate in candidates if self.deduplication_policy.matches(latitude, longitude, analysis.defect_type if analysis else None, candidate)), None)
+        # if duplicate is not None:
+        #     self.repository.add_report(db, duplicate.id, owner_id, image_url, latitude, longitude)
+        #     duplicate.confirmation_count += 1
+        #     self.apply_priority(duplicate)
+        #     self.repository.add_event(db, duplicate.id, owner_id, "report_confirmed", {"confirmation_count": duplicate.confirmation_count})
+        #     db.commit()
+        #     db.refresh(duplicate)
+        #     return duplicate
+        # -----------------------------------------------
 
         defect = self.repository.create(
             db,

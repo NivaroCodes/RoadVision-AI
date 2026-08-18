@@ -123,7 +123,7 @@ def get_ml_stats(db: Session = Depends(get_db)):
                 "confirmation_count": d.confirmation_count,
                 "created_at": d.created_at.isoformat()
             })
-        response = httpx.post(f"{ML_SERVICE_URL}/api/v1/prediction", json={"defects": payload_defects}, timeout=10.0)
+        response = httpx.post(f"{ML_SERVICE_URL}/api/v1/prediction", json={"defects": payload_defects}, timeout=30.0)
         if response.status_code == 200:
             segments = response.json().get("high_risk_segments", [])
             high_risk_locations = len(segments)

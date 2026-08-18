@@ -52,7 +52,7 @@ class RemotePriorityEngine:
                 "confirmation_count": defect.confirmation_count,
                 "status": defect.status.value
             }
-            response = httpx.post(f"{self.ml_url}/api/v1/priority", json=payload, timeout=5.0)
+            response = httpx.post(f"{self.ml_url}/api/v1/priority", json=payload, timeout=30.0)
             if response.status_code == 200:
                 data = response.json()
                 level_str = data.get("priority_level")

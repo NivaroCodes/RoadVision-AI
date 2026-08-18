@@ -19,7 +19,7 @@ const SHYMKENT_CENTER: [number, number] = [42.3417, 69.5901];
 const INITIAL_FILTERS: MapFilterValues = { type: 'all', severity: 'all', status: 'all', query: '', minConfidence: 0 };
 const SEVERITY_KEYS: (Severity | 'all')[] = ['all', 'critical', 'high', 'medium', 'low'];
 
-type MapLayerType = 'osm' | 'voyager' | 'dark';
+type MapLayerType = 'voyager' | 'dark';
 
 function MapResizeHandler() {
   const map = useMap();
@@ -42,7 +42,7 @@ function RecenterControl() {
   return (
     <button
       type="button"
-      className="map-recenter-button absolute bottom-4 right-24 z-[500] rounded-lg border border-border bg-card/95 px-3 py-1.5 text-[11.5px] font-medium text-foreground shadow-panel backdrop-blur transition hover:bg-surface cursor-pointer"
+      className="map-recenter-button absolute bottom-3 right-[130px] z-[500] rounded-lg border border-border bg-card/95 px-3 py-1.5 text-[11.5px] font-medium text-foreground shadow-panel backdrop-blur transition hover:bg-surface cursor-pointer"
       onClick={() => map.setView(SHYMKENT_CENTER, 12, { animate: true })}
       aria-label="Центрировать карту на Шымкенте"
     >
@@ -59,7 +59,7 @@ export function MapView() {
   const { data: defects = [], isLoading, error: queryError } = useMapDefects({ from: fromParam, to: toParam });
   const error = queryError ? 'Не удалось загрузить данные с сервера' : null;
   const [filters, setFilters] = useState<MapFilterValues>(INITIAL_FILTERS);
-  const [activeLayer, setActiveLayer] = useState<MapLayerType>('osm');
+  const [activeLayer, setActiveLayer] = useState<MapLayerType>('dark');
 
   const filteredDefects = useMemo(() => {
     const query = filters.query.trim().toLocaleLowerCase();
@@ -95,19 +95,7 @@ export function MapView() {
           meta={`Под наблюдением 1 248 км · ${defects.length} дефектов`}
           action={
             <div className="hidden items-center gap-2 sm:flex">
-              {/* Layer switch buttons */}
               <div className="flex items-center rounded-lg border border-border bg-card p-0.5 text-[11px] font-medium">
-                <button
-                  type="button"
-                  onClick={() => setActiveLayer('osm')}
-                  className={cn(
-                    "flex items-center gap-1 rounded-md px-2.5 py-1 transition-colors cursor-pointer",
-                    activeLayer === 'osm' ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Layers className="size-3" />
-                  OpenStreetMap
-                </button>
                 <button
                   type="button"
                   onClick={() => setActiveLayer('voyager')}
@@ -159,7 +147,7 @@ export function MapView() {
           }
         />
 
-        <div className="relative min-h-[580px] h-[640px] w-full flex-1 overflow-hidden bg-background">
+        <div className="relative z-0 h-[calc(100vh-320px)] min-h-[500px] w-full shrink-0 bg-background/50">
           {isLoading ? (
             <div className="map-loading-overlay pointer-events-none absolute inset-0 z-[500] flex items-center justify-center p-4" role="status" aria-label="Загрузка карты">
               <div className="w-full max-w-sm rounded-xl border border-border bg-card/90 p-5 shadow-panel backdrop-blur">
@@ -183,38 +171,32 @@ export function MapView() {
             zoom={12}
             scrollWheelZoom={true}
             className="z-0 h-full w-full"
-            style={{ height: '100%', width: '100%', minHeight: '580px' }}
+            style={{ height: '100%', width: '100%', minHeight: '100%' }}
             zoomControl={false}
+            attributionControl={false}
           >
             <MapResizeHandler />
+            <ZoomControl position="topleft" />
+            <RecenterControl />
             <AddressSearch />
-
-            {activeLayer === 'osm' && (
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors'
-                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                maxZoom={19}
-              />
-            )}
 
             {activeLayer === 'voyager' && (
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/" target="_blank" rel="noreferrer">CARTO</a>'
-                url="https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-                maxZoom={19}
+                url="https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                subdomains="abcd"
+                maxZoom={20}
               />
             )}
 
             {activeLayer === 'dark' && (
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/" target="_blank" rel="noreferrer">CARTO</a>'
-                url="https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                maxZoom={19}
+                url="https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
+                subdomains="abcd"
+                maxZoom={20}
               />
             )}
-
-            <ZoomControl position="bottomright" />
-            <RecenterControl />
 
             {!isLoading && !error && filteredDefects.map((defect) => (
               <DefectMarker key={defect.id} defect={defect} />
