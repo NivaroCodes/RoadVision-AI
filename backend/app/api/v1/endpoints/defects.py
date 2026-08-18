@@ -10,11 +10,17 @@ from app.models.user import User, UserRole
 from app.repositories.defect import DefectRepository
 from app.schemas.defect import AnalysisRequest, AssignmentRequest, DefectEventRead, DefectMapRead, DefectRead, DefectUpdate, VerificationRead
 from app.services.defect import DefectService
+from app.services.ai import RemoteDetectionService
+from app.services.priority import RemotePriorityEngine
 from app.services.websocket import manager
 
 router = APIRouter()
 repository = DefectRepository()
-service = DefectService(repository)
+service = DefectService(
+    repository, 
+    detection_service=RemoteDetectionService(),
+    priority_engine=RemotePriorityEngine()
+)
 max_file_size = 10 * 1024 * 1024
 allowed_content_types = {"image/jpeg", "image/png", "image/jpg"}
 

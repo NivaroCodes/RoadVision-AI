@@ -36,3 +36,34 @@ class RuleBasedPriorityEngine:
         if defect.status in (DefectStatus.FIXED, DefectStatus.VERIFIED, DefectStatus.REJECTED):
             reasons.append(f"Lifecycle status is {defect.status.value}")
         return level, reasons or ["Awaiting AI assessment"]
+
+
+class RemotePriorityEngine:
+    def __init__(self, ml_url: str = "http://localhost:8001"):
+        self.ml_url = ml_url
+        self.fallback_engine = RuleBasedPriorityEngine()
+
+    def evaluate(self, defect: Defect) -> tuple[PriorityLevel, list[str]]:
+        try:
+            import httpx
+            payload = {
+                "severity": defect.severity.value if defect.severity else None,
+                "confidence": defect.confidence if defect.confidence else 0.0,
+                "confirmation_count": defect.confirmation_count,
+                "status": defect.status.value
+            }
+            response = httpx.post(f"{self.ml_url}/api/v1/priority", json=payload, timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                level_str = data.get("priority_level")
+                try:
+                    level = PriorityLevel(level_str)
+                except ValueError:
+                    level = PriorityLevel.LOW
+                score = data.get("priority_score", 0)
+                reasons = [f"ML Score: {score}/100", f"Level determined as {level_str}"]
+                return level, reasons
+        except Exception:
+            pass
+            
+        return self.fallback_engine.evaluate(defect)

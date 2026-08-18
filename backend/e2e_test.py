@@ -82,8 +82,8 @@ try:
     admin_headers = login(admin_email)
 
     first = upload(resident_headers, 42.300000, 69.600000, "first.jpg")
-    if first["status"] != "submitted" or first["analysis_status"] != "pending":
-        raise AssertionError("reports without an ML provider must remain pending")
+    if first["status"] != "submitted" or first["analysis_status"] != "completed":
+        raise AssertionError("reports with an ML provider must complete analysis")
     duplicate = upload(other_resident_headers, 42.300050, 69.600050, "duplicate.jpg")
     if duplicate["id"] != first["id"] or duplicate["confirmation_count"] != 2:
         raise AssertionError("nearby reports must aggregate into one defect")
