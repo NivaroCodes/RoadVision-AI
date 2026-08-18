@@ -10,3 +10,4 @@ bcrypt
 email-validator
 httpx
 Pillow
+

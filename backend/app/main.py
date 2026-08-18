@@ -151,6 +151,27 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def health_check():
     return {"status": "ok"}
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to Qala Vision API"}
+# Serve frontend build in production / docker if static directory exists
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+if not STATIC_DIR.exists():
+    STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+
+if STATIC_DIR.exists():
+    from fastapi.responses import FileResponse
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("uploads/"):
+            return {"error": "Not Found"}
+        target = STATIC_DIR / full_path
+        if target.is_file():
+            return FileResponse(target)
+        return FileResponse(STATIC_DIR / "index.html")
+else:
+    @app.get("/")
+    async def root():
+        return {"message": "Welcome to Qala Vision API"}
+
