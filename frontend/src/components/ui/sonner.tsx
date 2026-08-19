@@ -5,15 +5,26 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
+      theme="dark"
       className="toaster group"
+      position="bottom-right"
       toastOptions={{
+        style: {
+          background: "#16181d",
+          border: "2px solid rgba(155, 239, 24, 0.55)",
+          boxShadow: "0 0 28px rgba(155, 239, 24, 0.15), 0 8px 32px rgba(0,0,0,0.6)",
+          borderRadius: "14px",
+          padding: "14px 16px",
+          color: "#f4f4f5",
+          fontFamily: "var(--font-sans)",
+          fontSize: "13.5px",
+        },
         classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-[#16181d] group-[.toaster]:text-[#f4f4f5] group-[.toaster]:border-2 group-[.toaster]:border-[#9bef18]/60 group-[.toaster]:shadow-[0_0_25px_rgba(155,239,24,0.18)] rounded-xl p-4 font-sans text-[13.5px]",
-          title: "font-bold text-[#9bef18] text-[14.5px] leading-tight mb-1",
-          description: "text-[#e4e4e7] text-[12.5px] font-medium leading-relaxed",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+          title: "!text-[#9bef18] !font-bold !text-[14px] !leading-tight",
+          description: "!text-[#d4d4d8] !text-[12.5px] !font-medium !leading-relaxed !mt-0.5",
+          actionButton: "!bg-primary !text-primary-foreground",
+          cancelButton: "!bg-muted !text-muted-foreground",
+          closeButton: "!bg-surface !text-muted-foreground !border-border hover:!text-foreground",
         },
       }}
       {...props}

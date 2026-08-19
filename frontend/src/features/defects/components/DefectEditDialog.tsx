@@ -140,7 +140,10 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
     });
 
   const typeName = current.type ? defectTypeLabels[current.type] : 'Дефект дороги';
-  const confidencePercent = current.confidence === null ? '—' : `${Math.round(current.confidence * 100)}%`;
+  const displayConfidence = current.verification_confidence ?? current.confidence;
+  const confidencePercent = !displayConfidence || displayConfidence === 0
+    ? '—'
+    : `${Math.round(displayConfidence * 100)}%`;
 
   return (
     <Dialog open={defect !== null} onOpenChange={onOpenChange}>
