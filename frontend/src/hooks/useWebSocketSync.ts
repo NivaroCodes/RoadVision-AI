@@ -1,6 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
+const getWebSocketUrl = () => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  
+  if (host.includes(':5173')) {
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:8000/api/v1/ws/events`;
+  }
+  
+  return `${protocol}//${host}/api/v1/ws/events`;
+};
+
 export function useWebSocketSync() {
   const queryClient = useQueryClient();
   const ws = useRef<WebSocket | null>(null);
@@ -8,7 +20,7 @@ export function useWebSocketSync() {
 
   useEffect(() => {
     function connect() {
-      const url = `ws://localhost:8000/api/v1/ws/events`;
+      const url = getWebSocketUrl();
       
       ws.current = new WebSocket(url);
 
