@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, Loader2, Upload, Wrench } from 'lucide-react';
+import { Clock3, Loader2, Upload, Wrench, CameraOff } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -75,6 +75,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
   const [confidence, setConfidence] = useState(80);
   const [assigneeId, setAssigneeId] = useState('');
   const [afterImage, setAfterImage] = useState<File | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (current) {
@@ -84,6 +85,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
       setAnalysisSeverity(current.severity ?? 'medium');
       setConfidence(Math.round((current.confidence ?? 0.8) * 100));
       setAssigneeId(current.assigned_to_id ? String(current.assigned_to_id) : '');
+      setImageError(false);
     }
   }, [current]);
 
@@ -192,15 +194,20 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Изображение дефекта</span>
-              <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface/50">
-                <img 
-                  src={`${getApiBaseUrl()}${current.image_url}`} 
-                  alt="Изображение дефекта" 
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?q=80&w=600&auto=format&fit=crop';
-                  }}
-                />
+              <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface/50 flex items-center justify-center">
+                {current.image_url && !imageError ? (
+                  <img 
+                    src={`${getApiBaseUrl()}${current.image_url}`} 
+                    alt="Изображение дефекта" 
+                    className="h-full w-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="text-center p-4">
+                    <CameraOff className="size-7 text-muted-foreground/60 mx-auto mb-1" />
+                    <span className="text-[11.5px] text-muted-foreground block">Фото дефекта отсутствует</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="space-y-1">

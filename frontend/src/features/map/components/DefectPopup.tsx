@@ -43,7 +43,8 @@ export function DefectPopup({ defect }: DefectPopupProps) {
                 alt={typeText} 
                 className="h-full w-full object-cover" 
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?q=80&w=600&auto=format&fit=crop';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent) parent.style.display = 'none';
                 }}
               />
             </div>

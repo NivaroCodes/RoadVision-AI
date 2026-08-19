@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, Clock3, MapPin, RefreshCcw, UploadCloud, ChevronDown, ChevronUp, Sparkles, Wrench } from 'lucide-react';
+import { ClipboardList, Clock3, MapPin, RefreshCcw, UploadCloud, ChevronDown, ChevronUp, Sparkles, Wrench, CameraOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '@/api/client';
 import type { DefectMarker } from '@/features/map/types';
@@ -152,15 +152,30 @@ export default function MyDefectsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Фото дефекта</span>
-                            <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-2">
-                              <img 
-                                src={`${getApiBaseUrl()}${defect.image_url}`} 
-                                alt="Фото дефекта" 
-                                className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?q=80&w=600&auto=format&fit=crop';
-                                }}
-                              />
+                            <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-2 relative flex items-center justify-center">
+                              {defect.image_url ? (
+                                <>
+                                  <img 
+                                    src={`${getApiBaseUrl()}${defect.image_url}`} 
+                                    alt="Фото дефекта" 
+                                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      const placeholder = e.currentTarget.nextElementSibling;
+                                      if (placeholder) placeholder.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden absolute inset-0 flex flex-col items-center justify-center bg-surface-2 text-muted-foreground p-4">
+                                    <CameraOff className="size-8 mb-1 opacity-60" />
+                                    <span className="text-[11.5px] font-medium">Фото дефекта отсутствует</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-center p-4">
+                                  <CameraOff className="size-8 text-muted-foreground/60 mx-auto mb-1" />
+                                  <span className="text-[11.5px] text-muted-foreground block">Фото дефекта отсутствует</span>
+                                </div>
+                              )}
                             </div>
                           </div>
 
