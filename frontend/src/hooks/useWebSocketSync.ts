@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const getWebSocketUrl = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -37,8 +38,26 @@ export function useWebSocketSync() {
           if (data.event === 'DEFECT_CREATED' || data.event === 'DEFECT_UPDATED') {
             queryClient.invalidateQueries({ queryKey: ['defects'] });
             queryClient.invalidateQueries({ queryKey: ['map-defects'] });
+            queryClient.invalidateQueries({ queryKey: ['my-defects'] });
+            
+            if (data.id) {
+              queryClient.invalidateQueries({ queryKey: ['defect', data.id] });
+              queryClient.invalidateQueries({ queryKey: ['defect-events', data.id] });
+            }
+            
             queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
             queryClient.invalidateQueries({ queryKey: ['analytics-trends'] });
+
+            // Display toast notifications
+            if (data.id) {
+              if (data.event === 'DEFECT_CREATED') {
+                toast.success(`Новое обращение #${data.id} добавлено на карту!`);
+              } else if (data.event === 'DEFECT_UPDATED') {
+                toast.info(`Статус обращения #${data.id} обновлен`, {
+                  description: 'Посмотрите обновленные этапы обработки в разделе «Мои обращения»',
+                });
+              }
+            }
           }
         } catch {}
       };
