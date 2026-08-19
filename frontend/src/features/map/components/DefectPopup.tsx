@@ -17,7 +17,10 @@ const getApiBaseUrl = () => {
 };
 
 export function DefectPopup({ defect }: DefectPopupProps) {
-  const confidence = defect.confidence === null ? null : Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
+  const displayConfidence = defect.verification_confidence ?? defect.confidence;
+  const confidence = !displayConfidence || displayConfidence === 0
+    ? null
+    : Math.min(100, Math.max(0, Math.round(displayConfidence * 100)));
   const typeText = defect.type ? defectTypeLabels[defect.type] : 'Дефект дороги';
   const severity = defect.severity ?? 'low';
 

@@ -60,6 +60,11 @@ class DefectMapRead(BaseModel):
     priority: PriorityLevel
     confirmation_count: int
     created_at: datetime
+    image_url: str | None = None
+    after_image_url: str | None = None
+    verification_confidence: float | None = None
+    verification_status: VerificationStatus | None = None
+    assigned_to_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
