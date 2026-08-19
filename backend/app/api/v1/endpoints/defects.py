@@ -11,15 +11,17 @@ from app.core.config import settings
 from app.repositories.defect import DefectRepository
 from app.schemas.defect import AnalysisRequest, AssignmentRequest, DefectEventRead, DefectMapRead, DefectRead, DefectUpdate, VerificationRead
 from app.services.defect import DefectService
-from app.services.ai import RemoteDetectionService
+from app.services.ai import RemoteDetectionService, YoloVerificationService
 from app.services.priority import RemotePriorityEngine
 from app.services.websocket import manager
 
 router = APIRouter()
 repository = DefectRepository()
+detection_svc = RemoteDetectionService(ml_url=settings.ML_SERVICE_URL)
 service = DefectService(
     repository, 
-    detection_service=RemoteDetectionService(ml_url=settings.ML_SERVICE_URL),
+    detection_service=detection_svc,
+    verification_service=YoloVerificationService(detection_service=detection_svc),
     priority_engine=RemotePriorityEngine(ml_url=settings.ML_SERVICE_URL)
 )
 max_file_size = 10 * 1024 * 1024
