@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/features/auth/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { dateRanges, notifications, severityClasses } from "@/lib/roadvision-data";
+import { dateRanges, notifications, severityClasses, type Severity } from "@/lib/roadvision-data";
 import { format, subDays } from "date-fns";
 
 const roleNames: Record<string, string> = {
@@ -36,7 +36,27 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [read, setRead] = useState(false);
+  const [notificationsList, setNotificationsList] = useState<any[]>(() => {
+    const saved = localStorage.getItem('roadvision_notifications');
+    return saved ? JSON.parse(saved) : notifications;
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const saved = localStorage.getItem('roadvision_notifications');
+      if (saved) {
+        setNotificationsList(JSON.parse(saved));
+      }
+    };
+    window.addEventListener('roadvision_notifications_updated', handleUpdate);
+    return () => window.removeEventListener('roadvision_notifications_updated', handleUpdate);
+  }, []);
+
+  const handleMarkAllRead = () => {
+    const updated = notificationsList.map((n) => ({ ...n, unread: false }));
+    setNotificationsList(updated);
+    localStorage.setItem('roadvision_notifications', JSON.stringify(updated));
+  };
 
   const getPageInfo = () => {
     const path = location.pathname;
@@ -143,7 +163,7 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
   const { title, subtitle } = getPageInfo();
   const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : "??";
   const roleLabel = user ? (roleNames[user.role] ?? user.role) : "Гость";
-  const unreadCount = read ? 0 : notifications.filter((n) => n.unread).length;
+  const unreadCount = notificationsList.filter((n) => n.unread).length;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
@@ -211,25 +231,25 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
               <span className="text-[13px] font-semibold text-foreground">Уведомления</span>
               <button
                 type="button"
-                onClick={() => setRead(true)}
+                onClick={handleMarkAllRead}
                 className="text-[11.5px] font-medium text-primary transition-opacity hover:opacity-80"
               >
                 Прочитать все
               </button>
             </div>
             <ul className="max-h-[300px] divide-y divide-border overflow-y-auto">
-              {notifications.map((n) => (
+              {notificationsList.map((n) => (
                 <li
                   key={n.id}
                   className={cn(
                     "flex items-start gap-3 p-3.5 transition-colors hover:bg-accent/40",
-                    n.unread && !read && "bg-surface/40",
+                    n.unread && "bg-surface/40",
                   )}
                 >
                   <span
                     className={cn(
                       "mt-1 size-2 shrink-0 rounded-full",
-                      severityClasses[n.severity].dot,
+                      severityClasses[n.severity as Severity]?.dot || "bg-muted",
                     )}
                   />
                   <div className="min-w-0 flex-1">

@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { apiClient } from '@/api/client';
+import { useAuth } from '@/features/auth/useAuth';
+import { defectTypeLabels } from '@/features/defects/labels';
+import { statusLabel } from '@/lib/roadvision-data';
 
 const getWebSocketUrl = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -18,6 +22,7 @@ export function useWebSocketSync() {
   const queryClient = useQueryClient();
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<number | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     function connect() {
@@ -48,15 +53,78 @@ export function useWebSocketSync() {
             queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
             queryClient.invalidateQueries({ queryKey: ['analytics-trends'] });
 
-            // Display toast notifications
+            // Display toast notifications and dropdown updates
             if (data.id) {
-              if (data.event === 'DEFECT_CREATED') {
-                toast.success(`Новое обращение #${data.id} добавлено на карту!`);
-              } else if (data.event === 'DEFECT_UPDATED') {
-                toast.info(`Статус обращения #${data.id} обновлен`, {
-                  description: 'Посмотрите обновленные этапы обработки в разделе «Мои обращения»',
-                });
-              }
+              apiClient.get(`/defects/${data.id}`).then((response) => {
+                const defect = response.data;
+                let title = '';
+                let body = '';
+                let severity = 'low';
+                let isRelevant = false;
+
+                if (user?.role === 'admin') {
+                  isRelevant = true;
+                  if (data.event === 'DEFECT_CREATED') {
+                    title = `Поступило новое обращение #${defect.id}`;
+                    body = `${defect.type ? defectTypeLabels[defect.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${defect.address || 'Адрес не определен'}`;
+                    severity = defect.severity || 'low';
+                  } else {
+                    title = `Обновлен статус дефекта #${defect.id}`;
+                    body = `Новый статус: ${statusLabel[defect.status] ?? defect.status}`;
+                    severity = defect.severity || 'low';
+                  }
+                } else if (user?.role === 'road_service') {
+                  if (defect.assigned_to_id === user.id) {
+                    isRelevant = true;
+                    if (defect.status === 'detected' || defect.status === 'in_progress') {
+                      title = `Вам назначена новая задача #${defect.id}!`;
+                      body = `Устранить: ${defect.type ? defectTypeLabels[defect.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${defect.address || 'Адрес не определен'}`;
+                      severity = defect.severity || 'medium';
+                    } else {
+                      title = `Статус вашей задачи #${defect.id} обновлен`;
+                      body = `Новый статус: ${statusLabel[defect.status] ?? defect.status}`;
+                      severity = 'low';
+                    }
+                  }
+                } else if (user?.role === 'resident' && defect.creator_id === user.id) {
+                  isRelevant = true;
+                  if (data.event === 'DEFECT_CREATED') {
+                    title = `Ваше обращение #${defect.id} зарегистрировано`;
+                    body = `ИИ Qala Vision анализирует снимок…`;
+                    severity = 'low';
+                  } else {
+                    title = `Изменение по обращению #${defect.id}`;
+                    body = `Статус вашего обращения изменен на «${statusLabel[defect.status] ?? defect.status}»`;
+                    severity = 'low';
+                  }
+                }
+
+                if (isRelevant) {
+                  // 1. Show dynamic Toast notification
+                  if (data.event === 'DEFECT_CREATED') {
+                    toast.success(title, { description: body, duration: 6000 });
+                  } else {
+                    toast.info(title, { description: body, duration: 6000 });
+                  }
+
+                  // 2. Add to localStorage for Header notifications bell
+                  const saved = localStorage.getItem('roadvision_notifications');
+                  const list = saved ? JSON.parse(saved) : [];
+                  const newNotify = {
+                    id: `notify_${Date.now()}_${data.id}`,
+                    title,
+                    body,
+                    ago: 'Только что',
+                    severity,
+                    unread: true,
+                  };
+                  list.unshift(newNotify);
+                  localStorage.setItem('roadvision_notifications', JSON.stringify(list.slice(0, 30)));
+
+                  // 3. Dispatch global event to notify Header
+                  window.dispatchEvent(new Event('roadvision_notifications_updated'));
+                }
+              }).catch(() => {});
             }
           }
         } catch {}
@@ -87,5 +155,5 @@ export function useWebSocketSync() {
         }
       }
     };
-  }, [queryClient]);
+  }, [queryClient, user]);
 }
