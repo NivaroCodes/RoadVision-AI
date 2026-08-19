@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock3, Loader2, Upload } from 'lucide-react';
+import { Clock3, Loader2, Upload, Wrench } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +13,14 @@ import { defectSeverityLabels, defectTypeLabels } from '../labels';
 import { useUpdateDefect } from '../hooks/useUpdateDefect';
 import { cn } from '@/lib/utils';
 import { statusLabel, severityLabel, type Severity } from '@/lib/roadvision-data';
+
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL || '';
+  if (envUrl.includes('/api/v1')) {
+    return envUrl.split('/api/v1')[0];
+  }
+  return 'http://localhost:8000';
+};
 
 interface DefectEditDialogProps {
   defect: DefectMarker | null;
@@ -179,6 +187,40 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
               </dd>
             </div>
           </dl>
+
+          {/* Images Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Изображение дефекта</span>
+              <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface/50">
+                <img 
+                  src={`${getApiBaseUrl()}${current.image_url}`} 
+                  alt="Изображение дефекта" 
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=600&auto=format&fit=crop';
+                  }}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Отчет о ремонте</span>
+              <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface/50 flex items-center justify-center">
+                {current.after_image_url ? (
+                  <img 
+                    src={`${getApiBaseUrl()}${current.after_image_url}`} 
+                    alt="Отчет о ремонте" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-4">
+                    <Wrench className="size-7 text-muted-foreground/60 mx-auto mb-1 animate-bounce" />
+                    <span className="text-[11.5px] text-muted-foreground block">Отчет о ремонте еще не загружен</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Quick status change buttons */}
           <div className="rounded-xl border border-border bg-surface/30 p-4 space-y-2.5">

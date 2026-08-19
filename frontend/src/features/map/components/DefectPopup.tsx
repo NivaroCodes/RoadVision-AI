@@ -8,6 +8,14 @@ interface DefectPopupProps {
   defect: DefectMarker;
 }
 
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL || '';
+  if (envUrl.includes('/api/v1')) {
+    return envUrl.split('/api/v1')[0];
+  }
+  return 'http://localhost:8000';
+};
+
 export function DefectPopup({ defect }: DefectPopupProps) {
   const confidence = defect.confidence === null ? null : Math.min(100, Math.max(0, Math.round(defect.confidence * 100)));
   const typeText = defect.type ? defectTypeLabels[defect.type] : 'Дефект дороги';
@@ -28,6 +36,18 @@ export function DefectPopup({ defect }: DefectPopupProps) {
           <p className="mt-0.5 text-[11.5px] text-muted-foreground">
             {defect.address ?? `${defect.latitude.toFixed(4)}, ${defect.longitude.toFixed(4)}`}
           </p>
+          {defect.image_url && (
+            <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-surface-2 mt-2">
+              <img 
+                src={`${getApiBaseUrl()}${defect.image_url}`} 
+                alt={typeText} 
+                className="h-full w-full object-cover" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=600&auto=format&fit=crop';
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <dl className="grid grid-cols-2 gap-2 text-[12px]">
