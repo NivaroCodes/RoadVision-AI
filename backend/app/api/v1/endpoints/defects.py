@@ -196,17 +196,19 @@ async def update_defect(
 
 
 @router.post("/{defect_id}/analysis", response_model=DefectRead)
-def submit_analysis(
+async def submit_analysis(
     defect_id: int,
     analysis: AnalysisRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> Defect:
-    return service.apply_analysis(db, get_defect_or_404(db, defect_id), analysis, current_user.id)
+    defect = service.apply_analysis(db, get_defect_or_404(db, defect_id), analysis, current_user.id)
+    await broadcast("DEFECT_UPDATED", defect.id)
+    return defect
 
 
 @router.post("/{defect_id}/assign", response_model=DefectRead)
-def assign_defect(
+async def assign_defect(
     defect_id: int,
     assignment: AssignmentRequest,
     db: Session = Depends(get_db),
@@ -217,7 +219,9 @@ def assign_defect(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee not found")
     if current_user.role == UserRole.road_service and assignee.id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service users can only assign defects to themselves")
-    return service.assign(db, get_defect_or_404(db, defect_id), assignee, current_user.id)
+    defect = service.assign(db, get_defect_or_404(db, defect_id), assignee, current_user.id)
+    await broadcast("DEFECT_UPDATED", defect.id)
+    return defect
 
 
 @router.post("/{defect_id}/after-image", response_model=VerificationRead)
@@ -232,4 +236,5 @@ async def upload_after_image(
     if current_user.role == UserRole.road_service and defect.assigned_to_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service can only repair assigned defects")
     updated = service.upload_after_image(db, defect, content, image.filename or "after.jpg", current_user.id)
+    await broadcast("DEFECT_UPDATED", updated.id)
     return VerificationRead(defect_id=updated.id, status=updated.verification_status, confidence=updated.verification_confidence, after_image_url=updated.after_image_url or "")

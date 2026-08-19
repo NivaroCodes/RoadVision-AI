@@ -198,7 +198,7 @@ export function DefectEditDialog({ defect, onOpenChange, onSave }: DefectEditDia
                   alt="Изображение дефекта" 
                   className="h-full w-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=600&auto=format&fit=crop';
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?q=80&w=600&auto=format&fit=crop';
                   }}
                 />
               </div>
