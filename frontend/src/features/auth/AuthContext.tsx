@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { clearTokens, getAccessToken, storeTokens } from './storage';
 import type { AuthUser, Credentials, TokenPair } from './types';
@@ -8,6 +9,7 @@ import { AuthContext } from './useAuth';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const loadUser = useCallback(async () => {
     if (!getAccessToken()) {
@@ -48,12 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const accessToken = getAccessToken();
     clearTokens();
     setUser(null);
+    queryClient.clear();
     if (accessToken) {
       void apiClient.post('/auth/logout', undefined, {
         headers: { Authorization: `Bearer ${accessToken}` },
       }).catch(() => undefined);
     }
-  }, []);
+  }, [queryClient]);
 
   const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
