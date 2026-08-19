@@ -22,8 +22,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/features/auth/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { dateRanges, notifications, severityClasses, type Severity } from "@/lib/roadvision-data";
+import { dateRanges, severityClasses, statusLabel, type Severity } from "@/lib/roadvision-data";
 import { format, subDays } from "date-fns";
+import { apiClient } from "@/api/client";
+import { defectTypeLabels } from "@/features/defects/labels";
 
 const roleNames: Record<string, string> = {
   admin: "Администратор",
@@ -38,7 +40,7 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [notificationsList, setNotificationsList] = useState<any[]>(() => {
     const saved = localStorage.getItem('roadvision_notifications');
-    return saved ? JSON.parse(saved) : notifications;
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -49,8 +51,62 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
       }
     };
     window.addEventListener('roadvision_notifications_updated', handleUpdate);
-    return () => window.removeEventListener('roadvision_notifications_updated', handleUpdate);
-  }, []);
+
+    const saved = localStorage.getItem('roadvision_notifications');
+    if (!saved && user) {
+      const fetchRealNotifications = async () => {
+        try {
+          if (user.role === 'admin') {
+            const { data } = await apiClient.get<any[]>('/defects/', { params: { limit: 10 } });
+            const list = data.slice(0, 5).map(d => ({
+              id: `notify_init_${d.id}`,
+              title: `Поступило обращение #${d.id}`,
+              body: `${d.type ? defectTypeLabels[d.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${d.address || 'Адрес не определен'}`,
+              ago: 'Ранее',
+              severity: d.severity || 'low',
+              unread: d.status === 'submitted',
+            }));
+            localStorage.setItem('roadvision_notifications', JSON.stringify(list));
+            setNotificationsList(list);
+          } else if (user.role === 'road_service') {
+            const { data } = await apiClient.get<any[]>('/defects/', { params: { limit: 50 } });
+            const list = data
+              .filter(d => d.assigned_to_id === user.id)
+              .slice(0, 5)
+              .map(d => ({
+                id: `notify_init_${d.id}`,
+                title: `Назначена задача #${d.id}`,
+                body: `${d.type ? defectTypeLabels[d.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${d.address || 'Адрес не определен'}`,
+                ago: 'Ранее',
+                severity: d.severity || 'medium',
+                unread: d.status === 'detected' || d.status === 'in_progress',
+              }));
+            localStorage.setItem('roadvision_notifications', JSON.stringify(list));
+            setNotificationsList(list);
+          } else if (user.role === 'resident') {
+            const { data } = await apiClient.get<any[]>('/defects/mine');
+            const list = data.slice(0, 5).map(d => ({
+              id: `notify_init_${d.id}`,
+              title: `Обращение #${d.id} в статусе «${statusLabel[d.status] ?? d.status}»`,
+              body: `${d.type ? defectTypeLabels[d.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${d.address || 'Адрес не определен'}`,
+              ago: 'Ранее',
+              severity: d.severity || 'low',
+              unread: false,
+            }));
+            localStorage.setItem('roadvision_notifications', JSON.stringify(list));
+            setNotificationsList(list);
+          }
+        } catch (err) {
+          console.error("Failed to load initial notifications:", err);
+        }
+      };
+      void fetchRealNotifications();
+    }
+
+    return () => {
+      window.removeEventListener('roadvision_notifications_updated', handleUpdate);
+    };
+  }, [user]);
 
   const handleMarkAllRead = () => {
     const updated = notificationsList.map((n) => ({ ...n, unread: false }));
@@ -237,29 +293,36 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
                 Прочитать все
               </button>
             </div>
-            <ul className="max-h-[300px] divide-y divide-border overflow-y-auto">
-              {notificationsList.map((n) => (
-                <li
-                  key={n.id}
-                  className={cn(
-                    "flex items-start gap-3 p-3.5 transition-colors hover:bg-accent/40",
-                    n.unread && "bg-surface/40",
-                  )}
-                >
-                  <span
+            {notificationsList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center text-muted-foreground">
+                <span className="text-[12.5px] font-medium text-foreground/80">Нет новых уведомлений</span>
+                <span className="mt-1 text-[11px] text-muted-foreground">Все обращения и задачи обработаны</span>
+              </div>
+            ) : (
+              <ul className="max-h-[300px] divide-y divide-border overflow-y-auto">
+                {notificationsList.map((n) => (
+                  <li
+                    key={n.id}
                     className={cn(
-                      "mt-1 size-2 shrink-0 rounded-full",
-                      severityClasses[n.severity as Severity]?.dot || "bg-muted",
+                      "flex items-start gap-3 p-3.5 transition-colors hover:bg-accent/40",
+                      n.unread && "bg-surface/40",
                     )}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[12.5px] font-medium text-foreground">{n.title}</div>
-                    <div className="mt-0.5 text-[11.5px] text-muted-foreground">{n.body}</div>
-                    <div className="mt-1 text-[10.5px] text-muted-foreground/70">{n.ago}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  >
+                    <span
+                      className={cn(
+                        "mt-1 size-2 shrink-0 rounded-full",
+                        severityClasses[n.severity as Severity]?.dot || "bg-muted",
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12.5px] font-medium text-foreground">{n.title}</div>
+                      <div className="mt-0.5 text-[11.5px] text-muted-foreground">{n.body}</div>
+                      <div className="mt-1 text-[10.5px] text-muted-foreground/70">{n.ago}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </PopoverContent>
         </Popover>
 

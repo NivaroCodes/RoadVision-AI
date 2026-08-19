@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearTokens();
     setUser(null);
     queryClient.clear();
+    localStorage.removeItem('roadvision_notifications');
     if (accessToken) {
       void apiClient.post('/auth/logout', undefined, {
         headers: { Authorization: `Bearer ${accessToken}` },

@@ -55,15 +55,8 @@ export function useWebSocketSync() {
 
             // Display toast notifications and dropdown updates
             if (data.id) {
-              let shouldFetch = true;
-              if (user?.role === 'resident') {
-                const myDefects = queryClient.getQueryData<any[]>(['my-defects']);
-                shouldFetch = myDefects?.some((d: any) => d.id === data.id) ?? false;
-              }
-
-              if (shouldFetch) {
-                apiClient.get(`/defects/${data.id}`).then((response) => {
-                  const defect = response.data;
+              apiClient.get(`/defects/${data.id}`).then((response) => {
+                const defect = response.data;
                 let title = '';
                 let body = '';
                 let severity = 'low';
@@ -134,9 +127,8 @@ export function useWebSocketSync() {
               }).catch(() => {});
             }
           }
-        }
-      } catch {}
-    };
+        } catch {}
+      };
 
       ws.current.onclose = () => {
         reconnectTimeout.current = window.setTimeout(connect, 3000);
