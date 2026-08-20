@@ -222,7 +222,7 @@ async def assign_defect(
     if current_user.role == UserRole.road_service and assignee.id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Road Service users can only assign defects to themselves")
     defect = service.assign(db, get_defect_or_404(db, defect_id), assignee, current_user.id)
-    await broadcast("DEFECT_UPDATED", defect.id)
+    await broadcast("DEFECT_ASSIGNED", defect.id)
     return defect
 
 

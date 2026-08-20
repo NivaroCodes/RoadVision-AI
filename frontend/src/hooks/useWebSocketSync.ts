@@ -40,7 +40,7 @@ export function useWebSocketSync() {
       ws.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.event === 'DEFECT_CREATED' || data.event === 'DEFECT_UPDATED') {
+          if (data.event === 'DEFECT_CREATED' || data.event === 'DEFECT_UPDATED' || data.event === 'DEFECT_ASSIGNED') {
             queryClient.invalidateQueries({ queryKey: ['defects'] });
             queryClient.invalidateQueries({ queryKey: ['map-defects'] });
             queryClient.invalidateQueries({ queryKey: ['my-defects'] });
@@ -68,6 +68,10 @@ export function useWebSocketSync() {
                     title = `Поступило новое обращение #${defect.id}`;
                     body = `${defect.type ? defectTypeLabels[defect.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${defect.address || 'Адрес не определен'}`;
                     severity = defect.severity || 'low';
+                  } else if (data.event === 'DEFECT_ASSIGNED') {
+                    title = `Задача #${defect.id} назначена дорожной службе`;
+                    body = `Статус: ${statusLabel[defect.status] ?? defect.status}`;
+                    severity = 'low';
                   } else {
                     title = `Обновлен статус дефекта #${defect.id}`;
                     body = `Новый статус: ${statusLabel[defect.status] ?? defect.status}`;
@@ -76,7 +80,7 @@ export function useWebSocketSync() {
                 } else if (user?.role === 'road_service') {
                   if (defect.assigned_to_id === user.id) {
                     isRelevant = true;
-                    if (defect.status === 'detected' || defect.status === 'in_progress') {
+                    if (data.event === 'DEFECT_ASSIGNED') {
                       title = `Вам назначена новая задача #${defect.id}!`;
                       body = `Устранить: ${defect.type ? defectTypeLabels[defect.type as keyof typeof defectTypeLabels] : 'Дефект'} · ${defect.address || 'Адрес не определен'}`;
                       severity = defect.severity || 'medium';
@@ -101,7 +105,7 @@ export function useWebSocketSync() {
 
                 if (isRelevant) {
                   // 1. Show dynamic Toast notification
-                  if (data.event === 'DEFECT_CREATED') {
+                  if (data.event === 'DEFECT_CREATED' || data.event === 'DEFECT_ASSIGNED') {
                     toast.success(title, { description: body, duration: 6000 });
                   } else {
                     toast.info(title, { description: body, duration: 6000 });
